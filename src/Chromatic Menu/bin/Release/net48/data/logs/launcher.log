@@ -1,0 +1,275 @@
+﻿[2026-09-21 04:15:05.602] [INFO] Chromatic Menu starting up.
+[2026-09-21 04:15:05.681] [INFO] Creating default configuration.
+[2026-09-21 04:15:40.723] [INFO] Chromatic Menu starting up.
+[2026-09-21 04:15:41.066] [INFO] SystemInfo: Computer=DESKTOP-ECRC5MH, CPU=Ryzen 5 3600  3.6 GHz, OS=Windows 10 Pro  Build 19045, CT=6 Cores / 12 Threads, RAM=8.37 GB / 16.00 GB, Net=Ethernet (UP 0 Kbps   DOWN 0 Kbps), Disks=[C: SSD  94.82 GB / 110.63 GB; D: Disk  183.71 GB / 465.76 GB; E: NVMe  123.64 GB / 238.46 GB; F: SSD  57.17 GB / 119.23 GB], GPUs=[Radeon RX550/550 Series (Dedicated) 4.00 GB]
+[2026-09-21 04:16:16.930] [INFO] Chromatic Menu starting up.
+[2026-09-21 04:16:17.275] [INFO] SystemInfo: Computer=DESKTOP-ECRC5MH, CPU=Ryzen 5 3600  3.6 GHz, OS=Windows 10 Pro  Build 19045, CT=6 Cores / 12 Threads, RAM=8.24 GB / 16.00 GB, Net=Ethernet (UP 0 Kbps   DOWN 0 Kbps), Disks=[C: SSD  94.82 GB / 110.63 GB; D: Disk  183.71 GB / 465.76 GB; E: NVMe  123.64 GB / 238.46 GB; F: SSD  57.17 GB / 119.23 GB], GPUs=[Radeon RX550/550 Series (Dedicated) 4.00 GB]
+[2026-09-21 04:16:39.747] [INFO] Chromatic Menu starting up.
+[2026-09-21 04:16:40.110] [WARN] MSFT_PhysicalDisk query failed: Not found 
+[2026-09-21 04:16:40.131] [INFO] SystemInfo: Computer=DESKTOP-ECRC5MH, CPU=Ryzen 5 3600  3.6 GHz, OS=Windows 10 Pro  Build 19045, CT=6 Cores / 12 Threads, RAM=8.38 GB / 16.00 GB, Net=Ethernet (UP 0 Kbps   DOWN 0 Kbps), Disks=[C: SSD  94.82 GB / 110.63 GB; D: HDD  183.71 GB / 465.76 GB; E: SSD  123.64 GB / 238.46 GB; F: SSD  57.17 GB / 119.23 GB], GPUs=[Radeon RX550/550 Series (Dedicated) 4.00 GB]
+[2026-09-21 04:17:04.005] [INFO] Chromatic Menu starting up.
+[2026-09-21 04:17:04.355] [INFO] SystemInfo: Computer=DESKTOP-ECRC5MH, CPU=Ryzen 5 3600  3.6 GHz, OS=Windows 10 Pro  Build 19045, CT=6 Cores / 12 Threads, RAM=8.42 GB / 16.00 GB, Net=Ethernet (UP 0 Kbps   DOWN 0 Kbps), Disks=[C: SSD  94.82 GB / 110.63 GB; D: HDD  183.71 GB / 465.76 GB; E: NVMe  123.64 GB / 238.46 GB; F: SSD  57.17 GB / 119.23 GB], GPUs=[Radeon RX550/550 Series (Dedicated) 4.00 GB]
+[2026-09-21 04:17:13.447] [INFO] Chromatic Menu starting up.
+[2026-09-21 04:17:13.808] [INFO] SystemInfo: Computer=DESKTOP-ECRC5MH, CPU=Ryzen 5 3600  3.6 GHz, OS=Windows 10 Pro  Build 19045, CT=6 Cores / 12 Threads, RAM=8.14 GB / 16.00 GB, Net=Ethernet (UP 0 Kbps   DOWN 0 Kbps), Disks=[C: SSD  94.82 GB / 110.63 GB; D: HDD  183.71 GB / 465.76 GB; E: NVMe  123.64 GB / 238.46 GB; F: SSD  57.17 GB / 119.23 GB], GPUs=[Radeon RX550/550 Series (Dedicated) 4.00 GB]
+[2026-09-21 04:21:20.004] [INFO] Chromatic Menu starting up.
+[2026-09-21 04:21:20.356] [INFO] SystemInfo: Computer=DESKTOP-ECRC5MH, CPU=Ryzen 5 3600  3.6 GHz, OS=Windows 10 Pro  Build 19045, CT=6 Cores / 12 Threads, RAM=8.01 GB / 16.00 GB, Net=Ethernet (UP 0 Kbps   DOWN 0 Kbps), Disks=[C: SSD  94.82 GB / 110.63 GB; D: HDD  183.71 GB / 465.76 GB; E: NVMe  123.64 GB / 238.46 GB; F: SSD  57.17 GB / 119.23 GB], GPUs=[Radeon RX550/550 Series (Dedicated) 4.00 GB]
+[2026-09-21 04:32:10.232] [INFO] Chromatic Menu starting up.
+[2026-09-21 04:32:10.458] [INFO] Seeded 7 items from sample-config.json.
+[2026-09-21 04:32:10.903] [INFO] SystemInfo: Computer=DESKTOP-ECRC5MH, CPU=Ryzen 5 3600  3.6 GHz, OS=Windows 10 Pro  Build 19045, CT=6 Cores / 12 Threads, RAM=8.25 GB / 16.00 GB, Net=Ethernet (UP 0 Kbps   DOWN 0 Kbps), Disks=[C: SSD  94.81 GB / 110.63 GB; D: HDD  183.71 GB / 465.76 GB; E: NVMe  123.64 GB / 238.46 GB; F: SSD  57.17 GB / 119.23 GB], GPUs=[Radeon RX550/550 Series (Dedicated) 4.00 GB]
+[2026-09-21 04:33:24.091] [INFO] Launched program: Notepad (C:\Windows\System32\notepad.exe)
+[2026-09-21 04:33:24.160] [INFO] SystemInfo: Computer=DESKTOP-ECRC5MH, CPU=Ryzen 5 3600  3.6 GHz, OS=Windows 10 Pro  Build 19045, CT=6 Cores / 12 Threads, RAM=8.17 GB / 16.00 GB, Net=Ethernet (UP 0 Kbps   DOWN 0 Kbps), Disks=[C: SSD  94.81 GB / 110.63 GB; D: HDD  183.71 GB / 465.76 GB; E: NVMe  123.64 GB / 238.46 GB; F: SSD  57.17 GB / 119.23 GB], GPUs=[Radeon RX550/550 Series (Dedicated) 4.00 GB]
+[2026-09-21 05:01:04.526] [INFO] Chromatic Menu starting up.
+[2026-09-21 05:01:05.004] [INFO] SystemInfo: Computer=DESKTOP-ECRC5MH, CPU=Ryzen 5 3600  3.6 GHz, OS=Windows 10 Pro  Build 19045, CT=6 Cores / 12 Threads, RAM=7.96 GB / 16.00 GB, Net=Ethernet (UP 0 Kbps   DOWN 0 Kbps), Disks=[C: SSD  94.83 GB / 110.63 GB; D: HDD  183.71 GB / 465.76 GB; E: NVMe  123.64 GB / 238.46 GB; F: SSD  57.17 GB / 119.23 GB], GPUs=[Radeon RX550/550 Series (Dedicated) 4.00 GB]
+[2026-09-21 05:01:25.863] [INFO] Chromatic Menu exiting.
+[2026-09-21 05:01:26.659] [INFO] Chromatic Menu starting up.
+[2026-09-21 05:01:26.933] [ERROR] Failed to save config atomically.
+Exception: System.IO.IOException: Unable to remove the file to be replaced.
+
+   at System.IO.__Error.WinIOError(Int32 errorCode, String maybeFullPath)
+   at System.IO.File.InternalReplace(String sourceFileName, String destinationFileName, String destinationBackupFileName, Boolean ignoreMetadataErrors)
+   at ChromaticMenu.Services.ConfigService.Save(AppConfig config) in C:\Users\Hanazono Archive\Desktop\Chromatic Menu\src\Chromatic Menu\Services\ConfigService.cs:line 155
+[2026-09-21 05:01:27.100] [INFO] SystemInfo: Computer=DESKTOP-ECRC5MH, CPU=Ryzen 5 3600  3.6 GHz, OS=Windows 10 Pro  Build 19045, CT=6 Cores / 12 Threads, RAM=7.92 GB / 16.00 GB, Net=Ethernet (UP 0 Kbps   DOWN 0 Kbps), Disks=[C: SSD  94.83 GB / 110.63 GB; D: HDD  183.71 GB / 465.76 GB; E: NVMe  123.64 GB / 238.46 GB; F: SSD  57.17 GB / 119.23 GB], GPUs=[Radeon RX550/550 Series (Dedicated) 4.00 GB]
+[2026-09-21 05:01:38.045] [INFO] Launched technical tool: System Information (msinfo32.exe )
+[2026-09-21 05:02:15.709] [INFO] Chromatic Menu exiting.
+[2026-09-21 05:02:15.992] [INFO] Chromatic Menu exiting.
+[2026-09-21 05:02:18.315] [INFO] Chromatic Menu starting up.
+[2026-09-21 05:02:18.727] [INFO] SystemInfo: Computer=DESKTOP-ECRC5MH, CPU=Ryzen 5 3600  3.6 GHz, OS=Windows 10 Pro  Build 19045, CT=6 Cores / 12 Threads, RAM=7.96 GB / 16.00 GB, Net=Ethernet (UP 0 Kbps   DOWN 0 Kbps), Disks=[C: SSD  94.83 GB / 110.63 GB; D: HDD  183.71 GB / 465.76 GB; E: NVMe  123.64 GB / 238.46 GB; F: SSD  57.17 GB / 119.23 GB], GPUs=[Radeon RX550/550 Series (Dedicated) 4.00 GB]
+[2026-09-21 05:03:45.004] [INFO] Chromatic Menu exiting.
+[2026-09-21 05:03:47.289] [INFO] Chromatic Menu starting up.
+[2026-09-21 05:03:47.720] [INFO] SystemInfo: Computer=DESKTOP-ECRC5MH, CPU=Ryzen 5 3600  3.6 GHz, OS=Windows 10 Pro  Build 19045, CT=6 Cores / 12 Threads, RAM=8.02 GB / 16.00 GB, Net=Ethernet (UP 0 Kbps   DOWN 0 Kbps), Disks=[C: SSD  94.83 GB / 110.63 GB; D: HDD  183.71 GB / 465.76 GB; E: NVMe  123.64 GB / 238.46 GB; F: SSD  57.17 GB / 119.23 GB], GPUs=[Radeon RX550/550 Series (Dedicated) 4.00 GB]
+[2026-09-21 05:09:48.349] [INFO] Chromatic Menu exiting.
+[2026-09-21 05:12:36.392] [INFO] Chromatic Menu starting up.
+[2026-09-21 05:12:36.840] [INFO] SystemInfo: Computer=DESKTOP-ECRC5MH, CPU=Ryzen 5 3600  3.6 GHz, OS=Windows 10 Pro  Build 19045, CT=6 Cores / 12 Threads, RAM=8.10 GB / 16.00 GB, Net=Ethernet (UP 0 Kbps   DOWN 0 Kbps), Disks=[C: SSD  94.84 GB / 110.63 GB; D: HDD  183.71 GB / 465.76 GB; E: NVMe  123.64 GB / 238.46 GB; F: SSD  57.17 GB / 119.23 GB], GPUs=[Radeon RX550/550 Series (Dedicated) 4.00 GB]
+[2026-09-21 05:12:40.516] [INFO] Chromatic Menu exiting.
+[2026-09-21 05:12:45.406] [INFO] Chromatic Menu starting up.
+[2026-09-21 05:12:45.806] [INFO] SystemInfo: Computer=DESKTOP-ECRC5MH, CPU=Ryzen 5 3600  3.6 GHz, OS=Windows 10 Pro  Build 19045, CT=6 Cores / 12 Threads, RAM=8.06 GB / 16.00 GB, Net=Ethernet (UP 0 Kbps   DOWN 0 Kbps), Disks=[C: SSD  94.84 GB / 110.63 GB; D: HDD  183.71 GB / 465.76 GB; E: NVMe  123.64 GB / 238.46 GB; F: SSD  57.17 GB / 119.23 GB], GPUs=[Radeon RX550/550 Series (Dedicated) 4.00 GB]
+[2026-09-21 05:12:54.518] [INFO] Password successfully changed.
+[2026-09-21 05:13:16.580] [INFO] Launched technical tool: Command Prompt (cmd.exe )
+[2026-09-21 05:13:17.925] [INFO] Launched technical tool: Disk Management (diskmgmt.msc )
+[2026-09-21 05:13:21.111] [INFO] Launched technical tool: System Information (msinfo32.exe )
+[2026-09-21 05:13:26.907] [INFO] Chromatic Menu exiting.
+[2026-09-21 05:13:28.665] [INFO] Chromatic Menu starting up.
+[2026-09-21 05:13:29.089] [INFO] SystemInfo: Computer=DESKTOP-ECRC5MH, CPU=Ryzen 5 3600  3.6 GHz, OS=Windows 10 Pro  Build 19045, CT=6 Cores / 12 Threads, RAM=7.88 GB / 16.00 GB, Net=Ethernet (UP 0 Kbps   DOWN 0 Kbps), Disks=[C: SSD  94.84 GB / 110.63 GB; D: HDD  183.71 GB / 465.76 GB; E: NVMe  123.64 GB / 238.46 GB; F: SSD  57.17 GB / 119.23 GB], GPUs=[Radeon RX550/550 Series (Dedicated) 4.00 GB]
+[2026-09-21 05:16:15.294] [INFO] Chromatic Menu exiting.
+[2026-09-21 05:32:04.492] [INFO] Chromatic Menu starting up.
+[2026-09-21 05:32:04.920] [INFO] SystemInfo: Computer=DESKTOP-ECRC5MH, CPU=Ryzen 5 3600  3.6 GHz, OS=Windows 10 Pro  Build 19045, CT=6 Cores / 12 Threads, RAM=8.38 GB / 16.00 GB, Net=Ethernet (UP 0 Kbps   DOWN 0 Kbps), Disks=[C: SSD  94.86 GB / 110.63 GB; D: HDD  183.71 GB / 465.76 GB; E: NVMe  123.63 GB / 238.46 GB; F: SSD  57.17 GB / 119.23 GB], GPUs=[Radeon RX550/550 Series (Dedicated) 4.00 GB]
+[2026-09-21 05:32:12.707] [INFO] Password successfully changed.
+[2026-09-21 05:32:29.836] [ERROR] Failed to save config atomically.
+Exception: System.IO.IOException: Unable to remove the file to be replaced.
+
+   at System.IO.__Error.WinIOError(Int32 errorCode, String maybeFullPath)
+   at System.IO.File.InternalReplace(String sourceFileName, String destinationFileName, String destinationBackupFileName, Boolean ignoreMetadataErrors)
+   at ChromaticMenu.Services.ConfigService.Save(AppConfig config) in C:\Users\Hanazono Archive\Desktop\Chromatic Menu\src\Chromatic Menu\Services\ConfigService.cs:line 155
+[2026-09-21 05:32:39.623] [INFO] Launched technical tool: Control Panel (control.exe )
+[2026-09-21 05:36:25.282] [INFO] Launched program: Fishstrap (F:\Fishstrap\Fishstrap.exe)
+[2026-09-21 05:37:14.441] [INFO] Chromatic Menu exiting.
+[2026-09-21 05:50:26.241] [INFO] Chromatic Menu starting up.
+[2026-09-21 05:50:27.224] [INFO] SystemInfo: Computer=DESKTOP-ECRC5MH, CPU=Ryzen 5 3600  3.6 GHz, OS=Windows 10 Pro  Build 19045, CT=6 Cores / 12 Threads, RAM=6.46 GB / 16.00 GB, Net=Ethernet (UP 0 Kbps   DOWN 0 Kbps), Disks=[C: SSD  94.88 GB / 110.63 GB; D: HDD  183.71 GB / 465.76 GB; E: NVMe  123.63 GB / 238.46 GB; F: SSD  57.17 GB / 119.23 GB], GPUs=[Radeon RX550/550 Series (Dedicated) 4.00 GB]
+[2026-09-21 05:51:15.454] [INFO] Launched program: Fishstrap (F:\Fishstrap\Fishstrap.exe)
+[2026-09-21 05:51:15.835] [INFO] Launched program: Fishstrap (F:\Fishstrap\Fishstrap.exe)
+[2026-09-21 05:53:06.326] [INFO] Launched program: Fishstrap (F:\Fishstrap\Fishstrap.exe)
+[2026-09-21 05:54:25.940] [ERROR] Failed to save config atomically.
+Exception: System.IO.IOException: Unable to remove the file to be replaced.
+
+   at System.IO.__Error.WinIOError(Int32 errorCode, String maybeFullPath)
+   at System.IO.File.InternalReplace(String sourceFileName, String destinationFileName, String destinationBackupFileName, Boolean ignoreMetadataErrors)
+   at ChromaticMenu.Services.ConfigService.Save(AppConfig config) in C:\Users\Hanazono Archive\Desktop\Chromatic Menu\src\Chromatic Menu\Services\ConfigService.cs:line 155
+[2026-09-21 06:00:56.671] [ERROR] Unhandled Dispatcher Exception caught.
+Exception: System.NotSupportedException: Specified method is not supported.
+   at ChromaticMenu.Converters.BoolToVisibilityConverter.ConvertBack(Object value, Type targetType, Object parameter, CultureInfo culture) in C:\Users\Hanazono Archive\Desktop\Chromatic Menu\src\Chromatic Menu\Converters\CommonConverters.cs:line 61
+   at System.Windows.Data.BindingExpression.ConvertProposedValue(Object value)
+   at System.Windows.Data.BindingExpressionBase.UpdateValue()
+   at System.Windows.Data.BindingExpressionBase.ProcessDirty()
+   at System.Windows.Data.BindingExpressionBase.Dirty()
+   at System.Windows.Data.BindingExpressionBase.SetValue(DependencyObject d, DependencyProperty dp, Object value)
+   at System.Windows.DependencyObject.SetValueCommon(DependencyProperty dp, Object value, PropertyMetadata metadata, Boolean coerceWithDeferredReference, Boolean coerceWithCurrentValue, OperationType operationType, Boolean isInternal)
+   at System.Windows.DependencyObject.SetCurrentValueInternal(DependencyProperty dp, Object value)
+   at System.Windows.Controls.Primitives.ToggleButton.OnClick()
+   at System.Windows.Controls.Primitives.ButtonBase.OnMouseLeftButtonUp(MouseButtonEventArgs e)
+   at System.Windows.RoutedEventArgs.InvokeHandler(Delegate handler, Object target)
+   at System.Windows.RoutedEventHandlerInfo.InvokeHandler(Object target, RoutedEventArgs routedEventArgs)
+   at System.Windows.EventRoute.InvokeHandlersImpl(Object source, RoutedEventArgs args, Boolean reRaised)
+   at System.Windows.UIElement.ReRaiseEventAs(DependencyObject sender, RoutedEventArgs args, RoutedEvent newEvent)
+   at System.Windows.UIElement.OnMouseUpThunk(Object sender, MouseButtonEventArgs e)
+   at System.Windows.RoutedEventArgs.InvokeHandler(Delegate handler, Object target)
+   at System.Windows.RoutedEventHandlerInfo.InvokeHandler(Object target, RoutedEventArgs routedEventArgs)
+   at System.Windows.EventRoute.InvokeHandlersImpl(Object source, RoutedEventArgs args, Boolean reRaised)
+   at System.Windows.UIElement.RaiseEventImpl(DependencyObject sender, RoutedEventArgs args)
+   at System.Windows.UIElement.RaiseTrustedEvent(RoutedEventArgs args)
+   at System.Windows.Input.InputManager.ProcessStagingArea()
+   at System.Windows.Input.InputManager.ProcessInput(InputEventArgs input)
+   at System.Windows.Input.InputProviderSite.ReportInput(InputReport inputReport)
+   at System.Windows.Interop.HwndMouseInputProvider.ReportInput(IntPtr hwnd, InputMode mode, Int32 timestamp, RawMouseActions actions, Int32 x, Int32 y, Int32 wheel)
+   at System.Windows.Interop.HwndMouseInputProvider.FilterMessage(IntPtr hwnd, WindowMessage msg, IntPtr wParam, IntPtr lParam, Boolean& handled)
+   at System.Windows.Interop.HwndSource.InputFilterMessage(IntPtr hwnd, Int32 msg, IntPtr wParam, IntPtr lParam, Boolean& handled)
+   at MS.Win32.HwndWrapper.WndProc(IntPtr hwnd, Int32 msg, IntPtr wParam, IntPtr lParam, Boolean& handled)
+   at MS.Win32.HwndSubclass.DispatcherCallbackOperation(Object o)
+   at System.Windows.Threading.ExceptionWrapper.InternalRealCall(Delegate callback, Object args, Int32 numArgs)
+   at System.Windows.Threading.ExceptionWrapper.TryCatchWhen(Object source, Delegate callback, Object args, Int32 numArgs, Delegate catchHandler)
+[2026-09-21 06:00:57.308] [ERROR] Unhandled Dispatcher Exception caught.
+Exception: System.NotSupportedException: Specified method is not supported.
+   at ChromaticMenu.Converters.BoolToVisibilityConverter.ConvertBack(Object value, Type targetType, Object parameter, CultureInfo culture) in C:\Users\Hanazono Archive\Desktop\Chromatic Menu\src\Chromatic Menu\Converters\CommonConverters.cs:line 61
+   at System.Windows.Data.BindingExpression.ConvertProposedValue(Object value)
+   at System.Windows.Data.BindingExpressionBase.UpdateValue()
+   at System.Windows.Data.BindingExpressionBase.ProcessDirty()
+   at System.Windows.Data.BindingExpressionBase.Dirty()
+   at System.Windows.Data.BindingExpressionBase.SetValue(DependencyObject d, DependencyProperty dp, Object value)
+   at System.Windows.DependencyObject.SetValueCommon(DependencyProperty dp, Object value, PropertyMetadata metadata, Boolean coerceWithDeferredReference, Boolean coerceWithCurrentValue, OperationType operationType, Boolean isInternal)
+   at System.Windows.DependencyObject.SetCurrentValueInternal(DependencyProperty dp, Object value)
+   at System.Windows.Controls.Primitives.ToggleButton.OnClick()
+   at System.Windows.Controls.Primitives.ButtonBase.OnMouseLeftButtonUp(MouseButtonEventArgs e)
+   at System.Windows.RoutedEventArgs.InvokeHandler(Delegate handler, Object target)
+   at System.Windows.RoutedEventHandlerInfo.InvokeHandler(Object target, RoutedEventArgs routedEventArgs)
+   at System.Windows.EventRoute.InvokeHandlersImpl(Object source, RoutedEventArgs args, Boolean reRaised)
+   at System.Windows.UIElement.ReRaiseEventAs(DependencyObject sender, RoutedEventArgs args, RoutedEvent newEvent)
+   at System.Windows.UIElement.OnMouseUpThunk(Object sender, MouseButtonEventArgs e)
+   at System.Windows.RoutedEventArgs.InvokeHandler(Delegate handler, Object target)
+   at System.Windows.RoutedEventHandlerInfo.InvokeHandler(Object target, RoutedEventArgs routedEventArgs)
+   at System.Windows.EventRoute.InvokeHandlersImpl(Object source, RoutedEventArgs args, Boolean reRaised)
+   at System.Windows.UIElement.RaiseEventImpl(DependencyObject sender, RoutedEventArgs args)
+   at System.Windows.UIElement.RaiseTrustedEvent(RoutedEventArgs args)
+   at System.Windows.Input.InputManager.ProcessStagingArea()
+   at System.Windows.Input.InputManager.ProcessInput(InputEventArgs input)
+   at System.Windows.Input.InputProviderSite.ReportInput(InputReport inputReport)
+   at System.Windows.Interop.HwndMouseInputProvider.ReportInput(IntPtr hwnd, InputMode mode, Int32 timestamp, RawMouseActions actions, Int32 x, Int32 y, Int32 wheel)
+   at System.Windows.Interop.HwndMouseInputProvider.FilterMessage(IntPtr hwnd, WindowMessage msg, IntPtr wParam, IntPtr lParam, Boolean& handled)
+   at System.Windows.Interop.HwndSource.InputFilterMessage(IntPtr hwnd, Int32 msg, IntPtr wParam, IntPtr lParam, Boolean& handled)
+   at MS.Win32.HwndWrapper.WndProc(IntPtr hwnd, Int32 msg, IntPtr wParam, IntPtr lParam, Boolean& handled)
+   at MS.Win32.HwndSubclass.DispatcherCallbackOperation(Object o)
+   at System.Windows.Threading.ExceptionWrapper.InternalRealCall(Delegate callback, Object args, Int32 numArgs)
+   at System.Windows.Threading.ExceptionWrapper.TryCatchWhen(Object source, Delegate callback, Object args, Int32 numArgs, Delegate catchHandler)
+[2026-09-21 06:00:57.804] [ERROR] Unhandled Dispatcher Exception caught.
+Exception: System.NotSupportedException: Specified method is not supported.
+   at ChromaticMenu.Converters.BoolToVisibilityConverter.ConvertBack(Object value, Type targetType, Object parameter, CultureInfo culture) in C:\Users\Hanazono Archive\Desktop\Chromatic Menu\src\Chromatic Menu\Converters\CommonConverters.cs:line 61
+   at System.Windows.Data.BindingExpression.ConvertProposedValue(Object value)
+   at System.Windows.Data.BindingExpressionBase.UpdateValue()
+   at System.Windows.Data.BindingExpressionBase.ProcessDirty()
+   at System.Windows.Data.BindingExpressionBase.Dirty()
+   at System.Windows.Data.BindingExpressionBase.SetValue(DependencyObject d, DependencyProperty dp, Object value)
+   at System.Windows.DependencyObject.SetValueCommon(DependencyProperty dp, Object value, PropertyMetadata metadata, Boolean coerceWithDeferredReference, Boolean coerceWithCurrentValue, OperationType operationType, Boolean isInternal)
+   at System.Windows.DependencyObject.SetCurrentValueInternal(DependencyProperty dp, Object value)
+   at System.Windows.Controls.Primitives.ToggleButton.OnClick()
+   at System.Windows.Controls.Primitives.ButtonBase.OnMouseLeftButtonUp(MouseButtonEventArgs e)
+   at System.Windows.RoutedEventArgs.InvokeHandler(Delegate handler, Object target)
+   at System.Windows.RoutedEventHandlerInfo.InvokeHandler(Object target, RoutedEventArgs routedEventArgs)
+   at System.Windows.EventRoute.InvokeHandlersImpl(Object source, RoutedEventArgs args, Boolean reRaised)
+   at System.Windows.UIElement.ReRaiseEventAs(DependencyObject sender, RoutedEventArgs args, RoutedEvent newEvent)
+   at System.Windows.UIElement.OnMouseUpThunk(Object sender, MouseButtonEventArgs e)
+   at System.Windows.RoutedEventArgs.InvokeHandler(Delegate handler, Object target)
+   at System.Windows.RoutedEventHandlerInfo.InvokeHandler(Object target, RoutedEventArgs routedEventArgs)
+   at System.Windows.EventRoute.InvokeHandlersImpl(Object source, RoutedEventArgs args, Boolean reRaised)
+   at System.Windows.UIElement.RaiseEventImpl(DependencyObject sender, RoutedEventArgs args)
+   at System.Windows.UIElement.RaiseTrustedEvent(RoutedEventArgs args)
+   at System.Windows.Input.InputManager.ProcessStagingArea()
+   at System.Windows.Input.InputManager.ProcessInput(InputEventArgs input)
+   at System.Windows.Input.InputProviderSite.ReportInput(InputReport inputReport)
+   at System.Windows.Interop.HwndMouseInputProvider.ReportInput(IntPtr hwnd, InputMode mode, Int32 timestamp, RawMouseActions actions, Int32 x, Int32 y, Int32 wheel)
+   at System.Windows.Interop.HwndMouseInputProvider.FilterMessage(IntPtr hwnd, WindowMessage msg, IntPtr wParam, IntPtr lParam, Boolean& handled)
+   at System.Windows.Interop.HwndSource.InputFilterMessage(IntPtr hwnd, Int32 msg, IntPtr wParam, IntPtr lParam, Boolean& handled)
+   at MS.Win32.HwndWrapper.WndProc(IntPtr hwnd, Int32 msg, IntPtr wParam, IntPtr lParam, Boolean& handled)
+   at MS.Win32.HwndSubclass.DispatcherCallbackOperation(Object o)
+   at System.Windows.Threading.ExceptionWrapper.InternalRealCall(Delegate callback, Object args, Int32 numArgs)
+   at System.Windows.Threading.ExceptionWrapper.TryCatchWhen(Object source, Delegate callback, Object args, Int32 numArgs, Delegate catchHandler)
+[2026-09-21 06:00:59.109] [ERROR] Unhandled Dispatcher Exception caught.
+Exception: System.NotSupportedException: Specified method is not supported.
+   at ChromaticMenu.Converters.BoolToVisibilityConverter.ConvertBack(Object value, Type targetType, Object parameter, CultureInfo culture) in C:\Users\Hanazono Archive\Desktop\Chromatic Menu\src\Chromatic Menu\Converters\CommonConverters.cs:line 61
+   at System.Windows.Data.BindingExpression.ConvertProposedValue(Object value)
+   at System.Windows.Data.BindingExpressionBase.UpdateValue()
+   at System.Windows.Data.BindingExpressionBase.ProcessDirty()
+   at System.Windows.Data.BindingExpressionBase.Dirty()
+   at System.Windows.Data.BindingExpressionBase.SetValue(DependencyObject d, DependencyProperty dp, Object value)
+   at System.Windows.DependencyObject.SetValueCommon(DependencyProperty dp, Object value, PropertyMetadata metadata, Boolean coerceWithDeferredReference, Boolean coerceWithCurrentValue, OperationType operationType, Boolean isInternal)
+   at System.Windows.DependencyObject.SetCurrentValueInternal(DependencyProperty dp, Object value)
+   at System.Windows.Controls.Primitives.ToggleButton.OnClick()
+   at System.Windows.Controls.Primitives.ButtonBase.OnMouseLeftButtonUp(MouseButtonEventArgs e)
+   at System.Windows.RoutedEventArgs.InvokeHandler(Delegate handler, Object target)
+   at System.Windows.RoutedEventHandlerInfo.InvokeHandler(Object target, RoutedEventArgs routedEventArgs)
+   at System.Windows.EventRoute.InvokeHandlersImpl(Object source, RoutedEventArgs args, Boolean reRaised)
+   at System.Windows.UIElement.ReRaiseEventAs(DependencyObject sender, RoutedEventArgs args, RoutedEvent newEvent)
+   at System.Windows.UIElement.OnMouseUpThunk(Object sender, MouseButtonEventArgs e)
+   at System.Windows.RoutedEventArgs.InvokeHandler(Delegate handler, Object target)
+   at System.Windows.RoutedEventHandlerInfo.InvokeHandler(Object target, RoutedEventArgs routedEventArgs)
+   at System.Windows.EventRoute.InvokeHandlersImpl(Object source, RoutedEventArgs args, Boolean reRaised)
+   at System.Windows.UIElement.RaiseEventImpl(DependencyObject sender, RoutedEventArgs args)
+   at System.Windows.UIElement.RaiseTrustedEvent(RoutedEventArgs args)
+   at System.Windows.Input.InputManager.ProcessStagingArea()
+   at System.Windows.Input.InputManager.ProcessInput(InputEventArgs input)
+   at System.Windows.Input.InputProviderSite.ReportInput(InputReport inputReport)
+   at System.Windows.Interop.HwndMouseInputProvider.ReportInput(IntPtr hwnd, InputMode mode, Int32 timestamp, RawMouseActions actions, Int32 x, Int32 y, Int32 wheel)
+   at System.Windows.Interop.HwndMouseInputProvider.FilterMessage(IntPtr hwnd, WindowMessage msg, IntPtr wParam, IntPtr lParam, Boolean& handled)
+   at System.Windows.Interop.HwndSource.InputFilterMessage(IntPtr hwnd, Int32 msg, IntPtr wParam, IntPtr lParam, Boolean& handled)
+   at MS.Win32.HwndWrapper.WndProc(IntPtr hwnd, Int32 msg, IntPtr wParam, IntPtr lParam, Boolean& handled)
+   at MS.Win32.HwndSubclass.DispatcherCallbackOperation(Object o)
+   at System.Windows.Threading.ExceptionWrapper.InternalRealCall(Delegate callback, Object args, Int32 numArgs)
+   at System.Windows.Threading.ExceptionWrapper.TryCatchWhen(Object source, Delegate callback, Object args, Int32 numArgs, Delegate catchHandler)
+[2026-09-21 06:01:01.285] [ERROR] Unhandled Dispatcher Exception caught.
+Exception: System.NotSupportedException: Specified method is not supported.
+   at ChromaticMenu.Converters.BoolToVisibilityConverter.ConvertBack(Object value, Type targetType, Object parameter, CultureInfo culture) in C:\Users\Hanazono Archive\Desktop\Chromatic Menu\src\Chromatic Menu\Converters\CommonConverters.cs:line 61
+   at System.Windows.Data.BindingExpression.ConvertProposedValue(Object value)
+   at System.Windows.Data.BindingExpressionBase.UpdateValue()
+   at System.Windows.Data.BindingExpressionBase.ProcessDirty()
+   at System.Windows.Data.BindingExpressionBase.Dirty()
+   at System.Windows.Data.BindingExpressionBase.SetValue(DependencyObject d, DependencyProperty dp, Object value)
+   at System.Windows.DependencyObject.SetValueCommon(DependencyProperty dp, Object value, PropertyMetadata metadata, Boolean coerceWithDeferredReference, Boolean coerceWithCurrentValue, OperationType operationType, Boolean isInternal)
+   at System.Windows.DependencyObject.SetCurrentValueInternal(DependencyProperty dp, Object value)
+   at System.Windows.Controls.Primitives.ToggleButton.OnClick()
+   at System.Windows.Controls.Primitives.ButtonBase.OnMouseLeftButtonUp(MouseButtonEventArgs e)
+   at System.Windows.RoutedEventArgs.InvokeHandler(Delegate handler, Object target)
+   at System.Windows.RoutedEventHandlerInfo.InvokeHandler(Object target, RoutedEventArgs routedEventArgs)
+   at System.Windows.EventRoute.InvokeHandlersImpl(Object source, RoutedEventArgs args, Boolean reRaised)
+   at System.Windows.UIElement.ReRaiseEventAs(DependencyObject sender, RoutedEventArgs args, RoutedEvent newEvent)
+   at System.Windows.UIElement.OnMouseUpThunk(Object sender, MouseButtonEventArgs e)
+   at System.Windows.RoutedEventArgs.InvokeHandler(Delegate handler, Object target)
+   at System.Windows.RoutedEventHandlerInfo.InvokeHandler(Object target, RoutedEventArgs routedEventArgs)
+   at System.Windows.EventRoute.InvokeHandlersImpl(Object source, RoutedEventArgs args, Boolean reRaised)
+   at System.Windows.UIElement.RaiseEventImpl(DependencyObject sender, RoutedEventArgs args)
+   at System.Windows.UIElement.RaiseTrustedEvent(RoutedEventArgs args)
+   at System.Windows.Input.InputManager.ProcessStagingArea()
+   at System.Windows.Input.InputManager.ProcessInput(InputEventArgs input)
+   at System.Windows.Input.InputProviderSite.ReportInput(InputReport inputReport)
+   at System.Windows.Interop.HwndMouseInputProvider.ReportInput(IntPtr hwnd, InputMode mode, Int32 timestamp, RawMouseActions actions, Int32 x, Int32 y, Int32 wheel)
+   at System.Windows.Interop.HwndMouseInputProvider.FilterMessage(IntPtr hwnd, WindowMessage msg, IntPtr wParam, IntPtr lParam, Boolean& handled)
+   at System.Windows.Interop.HwndSource.InputFilterMessage(IntPtr hwnd, Int32 msg, IntPtr wParam, IntPtr lParam, Boolean& handled)
+   at MS.Win32.HwndWrapper.WndProc(IntPtr hwnd, Int32 msg, IntPtr wParam, IntPtr lParam, Boolean& handled)
+   at MS.Win32.HwndSubclass.DispatcherCallbackOperation(Object o)
+   at System.Windows.Threading.ExceptionWrapper.InternalRealCall(Delegate callback, Object args, Int32 numArgs)
+   at System.Windows.Threading.ExceptionWrapper.TryCatchWhen(Object source, Delegate callback, Object args, Int32 numArgs, Delegate catchHandler)
+[2026-09-21 06:03:50.081] [INFO] Launched technical tool: Device Manager (devmgmt.msc )
+[2026-09-21 06:03:53.054] [INFO] Launched technical tool: File Explorer (explorer.exe )
+[2026-09-21 06:03:55.466] [INFO] Launched technical tool: Uninstall Programs (control.exe appwiz.cpl)
+[2026-09-21 06:03:57.713] [INFO] Launched technical tool: Control Panel (control.exe )
+[2026-09-21 06:16:13.730] [INFO] Chromatic Menu starting up.
+[2026-09-21 06:16:14.168] [INFO] SystemInfo: Computer=DESKTOP-ECRC5MH, CPU=Ryzen 5 3600  3.6 GHz, OS=Windows 10 Pro  Build 19045, CT=6 Cores / 12 Threads, RAM=6.66 GB / 16.00 GB, Net=Ethernet (UP 0 Kbps   DOWN 0 Kbps), Disks=[C: SSD  94.85 GB / 110.63 GB; D: HDD  183.71 GB / 465.76 GB; E: NVMe  123.63 GB / 238.46 GB; F: SSD  57.17 GB / 119.23 GB], GPUs=[Radeon RX550/550 Series (Dedicated) 4.00 GB]
+[2026-09-21 06:17:28.916] [INFO] Chromatic Menu starting up.
+[2026-09-21 06:17:29.343] [INFO] SystemInfo: Computer=DESKTOP-ECRC5MH, CPU=Ryzen 5 3600  3.6 GHz, OS=Windows 10 Pro  Build 19045, CT=6 Cores / 12 Threads, RAM=6.47 GB / 16.00 GB, Net=Ethernet (UP 0 Kbps   DOWN 0 Kbps), Disks=[C: SSD  94.85 GB / 110.63 GB; D: HDD  183.71 GB / 465.76 GB; E: NVMe  123.63 GB / 238.46 GB; F: SSD  57.17 GB / 119.23 GB], GPUs=[Radeon RX550/550 Series (Dedicated) 4.00 GB]
+[2026-09-21 06:18:00.785] [INFO] Administrator password updated via Settings.
+[2026-09-21 06:19:12.806] [INFO] Launched program: Xeno-v1.3.60 (C:\Users\Hanazono Archive\Downloads\Xeno-v1.3.60.exe)
+[2026-09-21 06:19:44.928] [ERROR] Failed to save config atomically.
+Exception: System.IO.IOException: Unable to remove the file to be replaced.
+
+   at System.IO.__Error.WinIOError(Int32 errorCode, String maybeFullPath)
+   at System.IO.File.InternalReplace(String sourceFileName, String destinationFileName, String destinationBackupFileName, Boolean ignoreMetadataErrors)
+   at ChromaticMenu.Services.ConfigService.Save(AppConfig config) in C:\Users\Hanazono Archive\Desktop\Chromatic Menu\src\Chromatic Menu\Services\ConfigService.cs:line 155
+[2026-09-21 06:28:04.256] [INFO] Chromatic Menu starting up.
+[2026-09-21 06:28:04.770] [INFO] SystemInfo: Computer=DESKTOP-ECRC5MH, CPU=Ryzen 5 3600  3.6 GHz, OS=Windows 10 Pro  Build 19045, CT=6 Cores / 12 Threads, RAM=8.25 GB / 16.00 GB, Net=Ethernet (UP 0 Kbps   DOWN 0 Kbps), Disks=[C: SSD  95.78 GB / 110.63 GB; D: HDD  183.71 GB / 465.76 GB; E: NVMe  123.63 GB / 238.46 GB; F: SSD  57.17 GB / 119.23 GB], GPUs=[Radeon RX550/550 Series (Dedicated) 4.00 GB]
+[2026-09-21 06:28:25.405] [INFO] Chromatic Menu starting up.
+[2026-09-21 06:28:25.881] [INFO] SystemInfo: Computer=DESKTOP-ECRC5MH, CPU=Ryzen 5 3600  3.6 GHz, OS=Windows 10 Pro  Build 19045, CT=6 Cores / 12 Threads, RAM=8.13 GB / 16.00 GB, Net=Ethernet (UP 0 Kbps   DOWN 0 Kbps), Disks=[C: SSD  95.78 GB / 110.63 GB; D: HDD  183.71 GB / 465.76 GB; E: NVMe  123.63 GB / 238.46 GB; F: SSD  57.17 GB / 119.23 GB], GPUs=[Radeon RX550/550 Series (Dedicated) 4.00 GB]
+[2026-09-21 06:32:51.257] [INFO] Chromatic Menu exiting.
+[2026-09-21 06:39:23.389] [INFO] Chromatic Menu starting up.
+[2026-09-21 06:39:23.936] [INFO] SystemInfo: Computer=DESKTOP-ECRC5MH, CPU=Ryzen 5 3600  3.6 GHz, OS=Windows 10 Pro  Build 19045, CT=6 Cores / 12 Threads, RAM=7.93 GB / 16.00 GB, Net=Ethernet (UP 0 Kbps   DOWN 0 Kbps), Disks=[C: SSD  95.75 GB / 110.63 GB; D: HDD  183.71 GB / 465.76 GB; E: NVMe  123.63 GB / 238.46 GB; F: SSD  57.17 GB / 119.23 GB], GPUs=[Radeon RX550/550 Series (Dedicated) 4.00 GB]
+[2026-09-21 06:43:44.442] [INFO] Chromatic Menu exiting.
+[2026-09-21 06:44:26.397] [WARN] Failed to load wallpaper: Key cannot be null.
+Parameter name: key
+[2026-09-21 06:44:35.816] [WARN] Failed to load wallpaper: Key cannot be null.
+Parameter name: key
+[2026-09-21 06:45:44.876] [INFO] Chromatic Menu starting up.
+[2026-09-21 06:45:45.361] [INFO] SystemInfo: Computer=DESKTOP-ECRC5MH, CPU=Ryzen 5 3600  3.6 GHz, OS=Windows 10 Pro  Build 19045, CT=6 Cores / 12 Threads, RAM=7.75 GB / 16.00 GB, Net=Ethernet (UP 0 Kbps   DOWN 0 Kbps), Disks=[C: SSD  95.78 GB / 110.63 GB; D: HDD  183.71 GB / 465.76 GB; E: NVMe  123.63 GB / 238.46 GB; F: SSD  57.17 GB / 119.23 GB], GPUs=[Radeon RX550/550 Series (Dedicated) 4.00 GB]
+[2026-09-21 06:46:20.868] [INFO] Chromatic Menu exiting.
+[2026-09-21 06:56:17.014] [INFO] Chromatic Menu starting up.
+[2026-09-21 06:56:17.448] [INFO] SystemInfo: Computer=DESKTOP-ECRC5MH, CPU=Ryzen 5 3600  3.6 GHz, OS=Windows 10 Pro  Build 19045, CT=6 Cores / 12 Threads, RAM=8.15 GB / 16.00 GB, Net=Ethernet (UP 0 Kbps   DOWN 0 Kbps), Disks=[C: SSD  95.78 GB / 110.63 GB; D: HDD  183.71 GB / 465.76 GB; E: NVMe  123.63 GB / 238.46 GB; F: SSD  57.17 GB / 119.23 GB], GPUs=[Radeon RX550/550 Series (Dedicated) 4.00 GB]
+[2026-09-21 06:56:29.541] [INFO] Configuration saved successfully (1 items, 5 tabs).
+[2026-09-21 06:56:33.623] [INFO] Configuration saved successfully (0 items, 5 tabs).
+[2026-09-21 06:56:42.326] [INFO] Configuration saved successfully (0 items, 5 tabs).
+[2026-09-21 06:56:48.013] [INFO] Configuration saved successfully (0 items, 5 tabs).
+[2026-09-21 06:57:17.152] [INFO] Configuration saved successfully (0 items, 5 tabs).
+[2026-09-21 06:57:17.176] [INFO] Chromatic Menu exiting.

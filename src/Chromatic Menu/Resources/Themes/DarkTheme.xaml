@@ -1,0 +1,44 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <!-- Spacing Scale (4, 8, 12, 16, 24, 32) -->
+    <sys:Double x:Key="Spacing.Xs">4</sys:Double>
+    <sys:Double x:Key="Spacing.Sm">8</sys:Double>
+    <sys:Double x:Key="Spacing.Md">12</sys:Double>
+    <sys:Double x:Key="Spacing.Lg">16</sys:Double>
+    <sys:Double x:Key="Spacing.Xl">24</sys:Double>
+    <sys:Double x:Key="Spacing.Xxl">32</sys:Double>
+
+    <!-- Corner Radii -->
+    <CornerRadius x:Key="Radius.Sm">4</CornerRadius>
+    <CornerRadius x:Key="Radius.Card">8</CornerRadius>
+    <CornerRadius x:Key="Radius.Modal">12</CornerRadius>
+
+    <!-- Dark Theme Color Tokens -->
+    <Color x:Key="Color.Background">#121214</Color>
+    <Color x:Key="Color.Surface">#1F1F23</Color>
+    <Color x:Key="Color.SurfaceHover">#2B2B30</Color>
+    <Color x:Key="Color.SurfaceActive">#35353C</Color>
+    <Color x:Key="Color.Border">#2E2E33</Color>
+    <Color x:Key="Color.TextPrimary">#F4F4F6</Color>
+    <Color x:Key="Color.TextSecondary">#9E9EA8</Color>
+    <Color x:Key="Color.Accent">#0284C7</Color>
+    <Color x:Key="Color.AccentHover">#0369A1</Color>
+    <Color x:Key="Color.Danger">#EF4444</Color>
+    <Color x:Key="Color.Warning">#F59E0B</Color>
+
+    <!-- Frozen SolidColorBrushes -->
+    <SolidColorBrush x:Key="Brush.Background" Color="{StaticResource Color.Background}" />
+    <SolidColorBrush x:Key="Brush.Surface" Color="{StaticResource Color.Surface}" />
+    <SolidColorBrush x:Key="Brush.SurfaceHover" Color="{StaticResource Color.SurfaceHover}" />
+    <SolidColorBrush x:Key="Brush.SurfaceActive" Color="{StaticResource Color.SurfaceActive}" />
+    <SolidColorBrush x:Key="Brush.Border" Color="{StaticResource Color.Border}" />
+    <SolidColorBrush x:Key="Brush.TextPrimary" Color="{StaticResource Color.TextPrimary}" />
+    <SolidColorBrush x:Key="Brush.TextSecondary" Color="{StaticResource Color.TextSecondary}" />
+    <SolidColorBrush x:Key="Brush.Accent" Color="{StaticResource Color.Accent}" />
+    <SolidColorBrush x:Key="Brush.AccentHover" Color="{StaticResource Color.AccentHover}" />
+    <SolidColorBrush x:Key="Brush.Danger" Color="{StaticResource Color.Danger}" />
+    <SolidColorBrush x:Key="Brush.Warning" Color="{StaticResource Color.Warning}" />
+
+</ResourceDictionary>

@@ -1,0 +1,2096 @@
+<Window x:Class="ChromaticMenu.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:controls="clr-namespace:ChromaticMenu.Controls"
+        xmlns:converters="clr-namespace:ChromaticMenu.Converters"
+        xmlns:viewmodels="clr-namespace:ChromaticMenu.ViewModels"
+        mc:Ignorable="d"
+        Title="Chromatic Menu"
+        Icon="/Resources/app.ico"
+        WindowState="Maximized"
+        WindowStyle="None"
+        ResizeMode="NoResize"
+        SnapsToDevicePixels="True"
+        UseLayoutRounding="True"
+        Background="{DynamicResource Brush.Background}"
+        Foreground="{DynamicResource Brush.TextPrimary}"
+        FontFamily="{Binding CurrentFontFamily}"
+        FontSize="{Binding RootFontSize}"
+        MinWidth="900"
+        MinHeight="500">
+
+    <Window.Resources>
+        <ResourceDictionary>
+            <converters:NullToVisibilityConverter x:Key="NullToVis" />
+            <converters:NullToVisibilityConverter x:Key="NotNullToVis" Invert="True" />
+            <converters:BoolToVisibilityConverter x:Key="BoolToVis" />
+            <converters:BoolToVisibilityConverter x:Key="InverseBoolToVis" Invert="True" />
+            <converters:InverseBooleanConverter x:Key="InverseBool" />
+            <converters:ScaleFontConverter x:Key="ScaleFont" />
+            <converters:IconSizeToDimensionConverter x:Key="IconSizeToDim" />
+            <converters:EqualityToVisibilityConverter x:Key="EqToVis" />
+            <converters:EqualityToBoolConverter x:Key="EqToBool" />
+
+            <!-- Settings Sidebar Navigation Button Style -->
+            <Style x:Key="SettingsNavButtonStyle" TargetType="Button">
+                <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="Foreground" Value="{DynamicResource Brush.TextSecondary}" />
+                <Setter Property="BorderThickness" Value="0" />
+                <Setter Property="Padding" Value="12,10" />
+                <Setter Property="Margin" Value="0,2" />
+                <Setter Property="HorizontalContentAlignment" Value="Left" />
+                <Setter Property="Cursor" Value="Hand" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="navBorder"
+                                    Background="{TemplateBinding Background}"
+                                    BorderBrush="Transparent"
+                                    BorderThickness="3,0,0,0"
+                                    CornerRadius="4"
+                                    Padding="{TemplateBinding Padding}">
+                                <ContentPresenter HorizontalAlignment="Left" VerticalAlignment="Center" />
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="navBorder" Property="Background" Value="{DynamicResource Brush.SurfaceHover}" />
+                                    <Setter Property="Foreground" Value="{DynamicResource Brush.TextPrimary}" />
+                                </Trigger>
+                                <Trigger Property="Tag" Value="True">
+                                    <Setter TargetName="navBorder" Property="Background" Value="{DynamicResource Brush.SurfaceHover}" />
+                                    <Setter TargetName="navBorder" Property="BorderBrush" Value="{DynamicResource Brush.Accent}" />
+                                    <Setter Property="Foreground" Value="{DynamicResource Brush.Accent}" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!-- Program Grid Card ItemContainerStyle -->
+            <Style x:Key="ProgramCardItemStyle" TargetType="{x:Type ListBoxItem}">
+                <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="BorderThickness" Value="0" />
+                <Setter Property="Padding" Value="0" />
+                <Setter Property="Margin" Value="6" />
+                <Setter Property="HorizontalContentAlignment" Value="Center" />
+                <Setter Property="VerticalContentAlignment" Value="Center" />
+                <Setter Property="Width" Value="{Binding DataContext.IconSize, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource IconSizeToDim}, ConverterParameter='36'}" />
+                <Setter Property="Height" Value="{Binding DataContext.IconSize, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource IconSizeToDim}, ConverterParameter='60'}" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type ListBoxItem}">
+                            <Border x:Name="cardBorder"
+                                    Background="{DynamicResource Brush.Surface}"
+                                    BorderBrush="{DynamicResource Brush.Border}"
+                                    BorderThickness="1"
+                                    CornerRadius="{DynamicResource Radius.Card}"
+                                    Padding="8"
+                                    Cursor="Hand"
+                                    ToolTip="{Binding ToolTipText}"
+                                    HorizontalAlignment="Stretch"
+                                    VerticalAlignment="Stretch"
+                                    ContextMenuOpening="ProgramCard_ContextMenuOpening"
+                                    PreviewMouseRightButtonUp="ProgramCard_PreviewMouseRightButtonUp"
+                                    SnapsToDevicePixels="True">
+                                <Border.ContextMenu>
+                                    <ContextMenu>
+                                        <!-- Non-Edit Mode Options -->
+                                        <MenuItem Header="Open" Command="{Binding LaunchCommand}"
+                                                  FontWeight="Bold"
+                                                  Visibility="{Binding IsEditMode, Converter={StaticResource InverseBoolToVis}}">
+                                            <MenuItem.Icon>
+                                                <controls:LucideIcon Icon="play" Width="14" Height="14" Foreground="{DynamicResource Brush.Accent}" />
+                                            </MenuItem.Icon>
+                                        </MenuItem>
+                                        <MenuItem Header="Run as administrator" Command="{Binding RunAsAdminCommand}"
+                                                  Visibility="{Binding IsEditMode, Converter={StaticResource InverseBoolToVis}}">
+                                            <MenuItem.Icon>
+                                                <controls:LucideIcon Icon="shield" Width="14" Height="14" />
+                                            </MenuItem.Icon>
+                                        </MenuItem>
+                                        <MenuItem Header="Open file location" Command="{Binding OpenFileLocationCommand}"
+                                                  Visibility="{Binding IsEditMode, Converter={StaticResource InverseBoolToVis}}">
+                                            <MenuItem.Icon>
+                                                <controls:LucideIcon Icon="folder" Width="14" Height="14" />
+                                            </MenuItem.Icon>
+                                        </MenuItem>
+                                        <MenuItem Header="Properties" Command="{Binding ShowPropertiesCommand}"
+                                                  Visibility="{Binding IsEditMode, Converter={StaticResource InverseBoolToVis}}">
+                                            <MenuItem.Icon>
+                                                <controls:LucideIcon Icon="info" Width="14" Height="14" />
+                                            </MenuItem.Icon>
+                                        </MenuItem>
+                                        <Separator Visibility="{Binding IsEditMode, Converter={StaticResource BoolToVis}}" />
+
+                                        <!-- Edit Mode Context Menu Items -->
+                                        <MenuItem Header="Rename (F2)" Command="{Binding StartRenameCommand}"
+                                                  Visibility="{Binding IsEditMode, Converter={StaticResource BoolToVis}}">
+                                            <MenuItem.Icon>
+                                                <controls:LucideIcon Icon="pencil" Width="14" Height="14" />
+                                            </MenuItem.Icon>
+                                        </MenuItem>
+                                        <MenuItem Header="Change icon..." Command="{Binding ChangeIconCommand}"
+                                                  Visibility="{Binding IsEditMode, Converter={StaticResource BoolToVis}}">
+                                            <MenuItem.Icon>
+                                                <controls:LucideIcon Icon="image" Width="14" Height="14" />
+                                            </MenuItem.Icon>
+                                        </MenuItem>
+                                        <MenuItem Header="Reset icon to default" Command="{Binding ResetIconCommand}"
+                                                  Visibility="{Binding HasCustomIcon, Converter={StaticResource BoolToVis}}">
+                                            <MenuItem.Icon>
+                                                <controls:LucideIcon Icon="rotate-ccw" Width="14" Height="14" />
+                                            </MenuItem.Icon>
+                                        </MenuItem>
+                                        <MenuItem Header="Edit details..." Command="{Binding EditDetailsCommand}"
+                                                  Visibility="{Binding IsEditMode, Converter={StaticResource BoolToVis}}">
+                                            <MenuItem.Icon>
+                                                <controls:LucideIcon Icon="file-text" Width="14" Height="14" />
+                                            </MenuItem.Icon>
+                                        </MenuItem>
+                                        <MenuItem Header="Move to tab" ItemsSource="{Binding AvailableTabs}"
+                                                  Visibility="{Binding IsEditMode, Converter={StaticResource BoolToVis}}">
+                                            <MenuItem.Icon>
+                                                <controls:LucideIcon Icon="arrow-right-left" Width="14" Height="14" />
+                                            </MenuItem.Icon>
+                                            <MenuItem.ItemContainerStyle>
+                                                <Style TargetType="MenuItem">
+                                                    <Setter Property="Header" Value="{Binding Name}" />
+                                                    <Setter Property="Command" Value="{Binding DataContext.MoveToTabCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                                                    <Setter Property="CommandParameter" Value="{Binding}" />
+                                                </Style>
+                                            </MenuItem.ItemContainerStyle>
+                                        </MenuItem>
+                                        <Separator Visibility="{Binding IsEditMode, Converter={StaticResource BoolToVis}}" />
+                                        <MenuItem Header="Remove" Command="{Binding RemoveCommand}"
+                                                  Visibility="{Binding IsEditMode, Converter={StaticResource BoolToVis}}">
+                                            <MenuItem.Icon>
+                                                <controls:LucideIcon Icon="trash" Width="14" Height="14" Foreground="{DynamicResource Brush.Danger}" />
+                                            </MenuItem.Icon>
+                                        </MenuItem>
+                                    </ContextMenu>
+                                </Border.ContextMenu>
+
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="*" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+
+                                    <!-- Icon Container -->
+                                    <Grid Grid.Row="0"
+                                          Width="{Binding DataContext.IconSize, RelativeSource={RelativeSource AncestorType=Window}}"
+                                          Height="{Binding DataContext.IconSize, RelativeSource={RelativeSource AncestorType=Window}}"
+                                          HorizontalAlignment="Center"
+                                          VerticalAlignment="Center">
+                                        
+                                        <!-- High-Res Icon Image -->
+                                        <Image Source="{Binding DisplayIcon}"
+                                               Stretch="Uniform"
+                                               RenderOptions.BitmapScalingMode="HighQuality"
+                                               HorizontalAlignment="Center"
+                                               VerticalAlignment="Center"
+                                               Visibility="{Binding DisplayIcon, Converter={StaticResource NullToVis}}">
+                                            <Image.Effect>
+                                                <DropShadowEffect BlurRadius="6" ShadowDepth="1.5" Direction="270" Opacity="0.35" Color="#000000" />
+                                            </Image.Effect>
+                                        </Image>
+
+                                        <!-- Fallback Lucide Icon -->
+                                        <controls:LucideIcon Icon="{Binding FallbackIconName}"
+                                                            Width="{Binding DataContext.IconSize, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource IconSizeToDim}, ConverterParameter='-24'}"
+                                                            Height="{Binding DataContext.IconSize, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource IconSizeToDim}, ConverterParameter='-24'}"
+                                                            Foreground="{DynamicResource Brush.Accent}"
+                                                            HorizontalAlignment="Center"
+                                                            VerticalAlignment="Center"
+                                                            Visibility="{Binding DisplayIcon, Converter={StaticResource NotNullToVis}}" />
+
+                                        <!-- Broken Shortcut Overlay (unlink badge) per SPEC section 9 -->
+                                        <Border Background="{DynamicResource Brush.Warning}"
+                                                CornerRadius="{DynamicResource Radius.Sm}"
+                                                Padding="4"
+                                                HorizontalAlignment="Right"
+                                                VerticalAlignment="Top"
+                                                Margin="0,2,2,0"
+                                                Visibility="{Binding IsBroken, Converter={StaticResource BoolToVis}}"
+                                                ToolTip="{Binding ToolTipText}">
+                                            <controls:LucideIcon Icon="unlink" Width="14" Height="14" Foreground="#FFFFFF" />
+                                        </Border>
+                                    </Grid>
+
+                                    <!-- Search Tab Badge (SPEC section 10: small tab label per result) -->
+                                    <Border Grid.Row="1"
+                                            Margin="0,4,0,0"
+                                            Background="{DynamicResource Brush.SurfaceHover}"
+                                            BorderBrush="{DynamicResource Brush.Border}"
+                                            BorderThickness="1"
+                                            CornerRadius="{DynamicResource Radius.Sm}"
+                                            Padding="6,1"
+                                            HorizontalAlignment="Center"
+                                            Visibility="{Binding DataContext.IsSearching, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVis}}">
+                                        <TextBlock Text="{Binding TabName}"
+                                                   FontSize="10"
+                                                   Foreground="{DynamicResource Brush.TextSecondary}"
+                                                   TextTrimming="CharacterEllipsis" />
+                                    </Border>
+
+                                    <!-- Program Name Label / Inline Rename Box -->
+                                    <Grid Grid.Row="2" Margin="0,4,0,0" HorizontalAlignment="Center">
+                                        <!-- View Mode: TextBlock -->
+                                        <TextBlock Text="{Binding Name}"
+                                                   FontSize="{Binding DataContext.FontScale, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ScaleFont}, ConverterParameter='12'}"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource Brush.TextPrimary}"
+                                                   TextAlignment="Center"
+                                                   TextWrapping="Wrap"
+                                                   MaxHeight="34"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   HorizontalAlignment="Center"
+                                                   Visibility="{Binding IsEditingName, Converter={StaticResource InverseBoolToVis}}" />
+
+                                        <!-- Edit Mode: Inline Rename TextBox -->
+                                        <TextBox x:Name="RenameTextBox"
+                                                 Text="{Binding EditedName, UpdateSourceTrigger=PropertyChanged}"
+                                                 FontSize="12"
+                                                 FontWeight="SemiBold"
+                                                 Foreground="{DynamicResource Brush.TextPrimary}"
+                                                 Background="{DynamicResource Brush.Background}"
+                                                 BorderBrush="{DynamicResource Brush.Accent}"
+                                                 BorderThickness="1"
+                                                 Padding="4,2"
+                                                 TextAlignment="Center"
+                                                 TextWrapping="Wrap"
+                                                 MaxHeight="40"
+                                                 HorizontalAlignment="Center"
+                                                 Visibility="{Binding IsEditingName, Converter={StaticResource BoolToVis}}"
+                                                 Loaded="RenameTextBox_Loaded"
+                                                 KeyDown="RenameTextBox_KeyDown"
+                                                 LostFocus="RenameTextBox_LostFocus" />
+                                    </Grid>
+                                </Grid>
+                            </Border>
+
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="cardBorder" Property="Background" Value="{DynamicResource Brush.SurfaceHover}" />
+                                    <Setter TargetName="cardBorder" Property="BorderBrush" Value="{DynamicResource Brush.Accent}" />
+                                </Trigger>
+                                <Trigger Property="IsSelected" Value="True">
+                                    <Setter TargetName="cardBorder" Property="Background" Value="{DynamicResource Brush.SurfaceHover}" />
+                                    <Setter TargetName="cardBorder" Property="BorderBrush" Value="{DynamicResource Brush.Accent}" />
+                                    <Setter TargetName="cardBorder" Property="BorderThickness" Value="2" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+        </ResourceDictionary>
+    </Window.Resources>
+
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="40"
+                      CornerRadius="0"
+                      GlassFrameThickness="0"
+                      ResizeBorderThickness="0"
+                      UseAeroCaptionButtons="False" />
+    </WindowChrome.WindowChrome>
+
+    <Grid Background="{DynamicResource Brush.Background}">
+        <Grid.RowDefinitions>
+            <!-- 0: Custom Title Bar -->
+            <RowDefinition Height="40" />
+            <!-- 1: Header (roughly 44% / 34% / 22% columns) -->
+            <RowDefinition Height="Auto" MinHeight="140" MaxHeight="200" />
+            <!-- 2: Edit Mode Toolbar (Slim) -->
+            <RowDefinition Height="Auto" />
+            <!-- 3: Body (Tabs & Grid) -->
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- Root Wallpaper Container spanning Header, Edit Toolbar, and Body (Rows 1-3), excluding Top Title Bar (Row 0) -->
+        <Grid Grid.Row="1" Grid.RowSpan="3" ClipToBounds="True" IsHitTestVisible="False">
+            <Image Source="{Binding WallpaperSource}"
+                   Stretch="UniformToFill"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Center"
+                   Visibility="{Binding WallpaperSource, Converter={StaticResource NullToVis}}" />
+            <!-- Theme-aware scrim overlay so cards & text stay readable -->
+            <Border Background="{DynamicResource Brush.Background}"
+                    Opacity="0.45"
+                    Visibility="{Binding WallpaperSource, Converter={StaticResource NullToVis}}" />
+        </Grid>
+
+        <!-- 1. Custom Title Bar -->
+        <Border Grid.Row="0"
+                Background="{DynamicResource Brush.Surface}"
+                BorderBrush="{DynamicResource Brush.Border}"
+                BorderThickness="0,0,0,1">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <!-- Left: Logo & Shop Name -->
+                <StackPanel Grid.Column="0"
+                            Orientation="Horizontal"
+                            VerticalAlignment="Center"
+                            Margin="16,0,0,0">
+                    <!-- Custom Shop Logo (if set) -->
+                    <Image Source="{Binding ShopLogoSource}"
+                           Width="22" Height="22"
+                           Stretch="Uniform"
+                           Margin="0,0,10,0"
+                           Visibility="{Binding ShopLogoSource, Converter={StaticResource NullToVis}}" />
+                    <!-- Default Menu Icon -->
+                    <controls:LucideIcon Icon="layout-grid"
+                                        Width="20"
+                                        Height="20"
+                                        Foreground="{DynamicResource Brush.Accent}"
+                                        Margin="0,0,10,0"
+                                        Visibility="{Binding ShopLogoSource, Converter={StaticResource NotNullToVis}}" />
+                    <TextBlock Text="{Binding ShopName}"
+                               FontWeight="Bold"
+                               FontSize="15"
+                               Foreground="{DynamicResource Brush.TextPrimary}"
+                               VerticalAlignment="Center" />
+                </StackPanel>
+
+                <!-- Center: Drag Region (Native WindowChrome handles this) -->
+                <!-- Title text removed per user request -->
+
+                <!-- Right: Title Bar Buttons (Minimize and Close both minimize per SPEC section 5) -->
+                <StackPanel Grid.Column="2"
+                            Orientation="Horizontal"
+                            WindowChrome.IsHitTestVisibleInChrome="True">
+                    <Button Style="{StaticResource TitleBarButtonStyle}"
+                            Click="MinimizeButton_Click"
+                            ToolTip="Minimize">
+                        <controls:LucideIcon Icon="minus" Width="14" Height="14" />
+                    </Button>
+                    <Button Style="{StaticResource TitleBarCloseButtonStyle}"
+                            Click="CloseButton_Click"
+                            ToolTip="Close">
+                        <controls:LucideIcon Icon="x" Width="14" Height="14" />
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- 2. Header: Three Columns (44% / 34% / 22%) -->
+        <Grid Grid.Row="1" Margin="16,12,16,8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="44*" />
+                <ColumnDefinition Width="12" />
+                <ColumnDefinition Width="34*" />
+                <ColumnDefinition Width="12" />
+                <ColumnDefinition Width="22*" />
+            </Grid.ColumnDefinitions>
+
+            <!-- Column 1: Computer Info (Two Sub-columns) per SPEC section 7 -->
+            <Border Grid.Column="0"
+                    Background="Transparent"
+                    BorderBrush="{DynamicResource Brush.Border}"
+                    BorderThickness="1"
+                    CornerRadius="{DynamicResource Radius.Card}"
+                    Padding="14,10">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="14" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Left Sub-column: Computer Name, CPU, RAM (live), Disks (live) -->
+                    <StackPanel Grid.Column="0">
+                        <!-- Computer Name -->
+                        <Grid Margin="0,0,0,5">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" MinWidth="68" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Computer:" Foreground="{DynamicResource Brush.TextSecondary}" FontSize="12" />
+                            <TextBlock Grid.Column="1" Text="{Binding SystemInfo.ComputerName}"
+                                       Foreground="{DynamicResource Brush.TextPrimary}" FontWeight="SemiBold" FontSize="12"
+                                       TextTrimming="CharacterEllipsis" />
+                        </Grid>
+
+                        <!-- CPU -->
+                        <Grid Margin="0,0,0,5">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" MinWidth="68" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="CPU:" Foreground="{DynamicResource Brush.TextSecondary}" FontSize="12" />
+                            <TextBlock Grid.Column="1" Text="{Binding SystemInfo.CpuName}"
+                                       Foreground="{DynamicResource Brush.TextPrimary}" FontWeight="SemiBold" FontSize="12"
+                                       TextTrimming="CharacterEllipsis" />
+                        </Grid>
+
+                        <!-- RAM (live) -->
+                        <Grid Margin="0,0,0,5">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" MinWidth="68" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="RAM:" Foreground="{DynamicResource Brush.TextSecondary}" FontSize="12" />
+                            <TextBlock Grid.Column="1" Text="{Binding SystemInfo.RamDisplay}"
+                                       Foreground="{DynamicResource Brush.TextPrimary}" FontWeight="SemiBold" FontSize="12" />
+                        </Grid>
+
+                        <!-- Disks (live) -->
+                        <Grid Margin="0,0,0,2">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" MinWidth="68" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Disks:" Foreground="{DynamicResource Brush.TextSecondary}" FontSize="12" />
+                            <ItemsControl Grid.Column="1" ItemsSource="{Binding SystemInfo.Disks}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding DisplayString}"
+                                                   Foreground="{DynamicResource Brush.TextPrimary}"
+                                                   FontWeight="SemiBold"
+                                                   FontSize="11.5"
+                                                   Margin="0,0,0,2"
+                                                   TextTrimming="CharacterEllipsis" />
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </Grid>
+                    </StackPanel>
+
+                    <!-- Right Sub-column: OS, C/T, Ethernet/Wi-Fi (live), GPU, VRAM -->
+                    <StackPanel Grid.Column="2">
+                        <!-- OS -->
+                        <Grid Margin="0,0,0,5">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" MinWidth="62" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="OS:" Foreground="{DynamicResource Brush.TextSecondary}" FontSize="12" />
+                            <TextBlock Grid.Column="1" Text="{Binding SystemInfo.OsVersion}"
+                                       Foreground="{DynamicResource Brush.TextPrimary}" FontWeight="SemiBold" FontSize="12"
+                                       TextTrimming="CharacterEllipsis" />
+                        </Grid>
+
+                        <!-- C/T -->
+                        <Grid Margin="0,0,0,5">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" MinWidth="62" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="C/T:" Foreground="{DynamicResource Brush.TextSecondary}" FontSize="12" />
+                            <TextBlock Grid.Column="1" Text="{Binding SystemInfo.CoresAndThreads}"
+                                       Foreground="{DynamicResource Brush.TextPrimary}" FontWeight="SemiBold" FontSize="12" />
+                        </Grid>
+
+                        <!-- Network (live) -->
+                        <Grid Margin="0,0,0,5">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" MinWidth="62" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{Binding SystemInfo.NetworkName, StringFormat='{}{0}:'}"
+                                       Foreground="{DynamicResource Brush.TextSecondary}" FontSize="12" />
+                            <TextBlock Grid.Column="1" Text="{Binding SystemInfo.NetworkThroughput}"
+                                       Foreground="{DynamicResource Brush.TextPrimary}" FontWeight="SemiBold" FontSize="12"
+                                       TextTrimming="CharacterEllipsis" />
+                        </Grid>
+
+                        <!-- GPUs & VRAM (up to 2 GPUs) -->
+                        <ItemsControl ItemsSource="{Binding SystemInfo.Gpus}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Margin="0,0,0,4">
+                                        <Grid Margin="0,0,0,2">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto" MinWidth="62" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Text="GPU:" Foreground="{DynamicResource Brush.TextSecondary}" FontSize="12" />
+                                            <TextBlock Grid.Column="1" Text="{Binding DisplayName}"
+                                                       Foreground="{DynamicResource Brush.TextPrimary}" FontWeight="SemiBold" FontSize="12"
+                                                       TextTrimming="CharacterEllipsis" />
+                                        </Grid>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto" MinWidth="62" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Text="VRAM:" Foreground="{DynamicResource Brush.TextSecondary}" FontSize="12" />
+                                            <TextBlock Grid.Column="1" Text="{Binding VramString}"
+                                                       Foreground="{DynamicResource Brush.TextPrimary}" FontWeight="SemiBold" FontSize="12" />
+                                        </Grid>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- Column 2: Technical Tools (Data-Driven Grid) per SPEC section 7 -->
+            <Border Grid.Column="2"
+                    Background="Transparent"
+                    BorderBrush="{DynamicResource Brush.Border}"
+                    BorderThickness="1"
+                    CornerRadius="{DynamicResource Radius.Card}"
+                    Padding="10,8">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <StackPanel Orientation="Horizontal" Margin="4,0,0,6">
+                        <controls:LucideIcon Icon="settings" Width="15" Height="15"
+                                            Foreground="{DynamicResource Brush.Accent}"
+                                            Margin="0,0,6,0" />
+                        <TextBlock Text="Technical Tools"
+                                   FontWeight="SemiBold"
+                                   FontSize="12.5"
+                                   Foreground="{DynamicResource Brush.TextPrimary}" />
+                    </StackPanel>
+
+                    <!-- Compact 3-column data-driven grid of 11 tools -->
+                    <ItemsControl Grid.Row="1" ItemsSource="{Binding TechnicalTools}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <UniformGrid Columns="3" Rows="4" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Button Style="{StaticResource TechnicalToolButtonStyle}"
+                                        Margin="2"
+                                        Command="{Binding DataContext.LaunchToolCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                        CommandParameter="{Binding}"
+                                        ToolTip="{Binding ToolTip}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <controls:LucideIcon Icon="{Binding Icon}"
+                                                            Width="14"
+                                                            Height="14"
+                                                            Foreground="{DynamicResource Brush.Accent}"
+                                                            Margin="0,0,6,0" />
+                                        <TextBlock Text="{Binding Name}"
+                                                   FontSize="11"
+                                                   FontWeight="SemiBold"
+                                                   VerticalAlignment="Center"
+                                                   TextTrimming="CharacterEllipsis" />
+                                    </StackPanel>
+                                </Button>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </Grid>
+            </Border>
+
+            <!-- Column 3: Launcher Menu per SPEC section 7 & 8 -->
+            <Border Grid.Column="4"
+                    Background="Transparent"
+                    BorderBrush="{DynamicResource Brush.Border}"
+                    BorderThickness="1"
+                    CornerRadius="{DynamicResource Radius.Card}"
+                    Padding="12,10">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <Grid Margin="2,0,0,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <controls:LucideIcon Icon="layout-grid" Width="15" Height="15"
+                                                Foreground="{DynamicResource Brush.Accent}"
+                                                Margin="0,0,6,0" />
+                            <TextBlock Text="Launcher Menu"
+                                       FontWeight="SemiBold"
+                                       FontSize="12.5"
+                                       Foreground="{DynamicResource Brush.TextPrimary}" />
+                        </StackPanel>
+                        <!-- Lock / Unlock Indicator & Toggle Button -->
+                        <Button Grid.Column="1"
+                                Command="{Binding ToggleSessionLockCommand}"
+                                Cursor="Hand"
+                                Background="#10B981"
+                                BorderBrush="#059669"
+                                BorderThickness="1"
+                                Padding="8,3"
+                                ToolTip="Session is Unlocked. Click to Lock."
+                                Visibility="{Binding IsSessionUnlocked, Converter={StaticResource BoolToVis}}">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <controls:LucideIcon Icon="unlock" Width="12" Height="12" Foreground="#FFFFFF" Margin="0,0,5,0" />
+                                <TextBlock Text="Unlocked" FontSize="11" FontWeight="Bold" Foreground="#FFFFFF" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                        <Button Grid.Column="1"
+                                Command="{Binding ToggleSessionLockCommand}"
+                                Cursor="Hand"
+                                Background="{DynamicResource Brush.SurfaceHover}"
+                                BorderBrush="{DynamicResource Brush.Border}"
+                                BorderThickness="1"
+                                Padding="8,3"
+                                ToolTip="Session is Locked. Click to Unlock (Admin Password)."
+                                Visibility="{Binding IsSessionUnlocked, Converter={StaticResource InverseBoolToVis}}">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <controls:LucideIcon Icon="lock" Width="12" Height="12" Foreground="{DynamicResource Brush.TextPrimary}" Margin="0,0,5,0" />
+                                <TextBlock Text="Locked" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextPrimary}" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                    </Grid>
+                    <UniformGrid Grid.Row="1" Columns="2" Rows="2">
+                        <Button Margin="3" Style="{StaticResource BaseButtonStyle}"
+                                Command="{Binding RequestSettingsCommand}"
+                                ToolTip="Shop settings and configuration">
+                            <StackPanel Orientation="Horizontal">
+                                <controls:LucideIcon Icon="settings" Width="14" Height="14" Margin="0,0,6,0" />
+                                <TextBlock Text="Settings" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                        <Button Margin="3" Style="{StaticResource BaseButtonStyle}"
+                                Command="{Binding RequestThemeCommand}"
+                                ToolTip="Theme and color appearance">
+                            <StackPanel Orientation="Horizontal">
+                                <controls:LucideIcon Icon="palette" Width="14" Height="14" Margin="0,0,6,0" />
+                                <TextBlock Text="Theme" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                        <Button Margin="3" Style="{StaticResource BaseButtonStyle}"
+                                Command="{Binding RequestFontCommand}"
+                                ToolTip="Font family and size">
+                            <StackPanel Orientation="Horizontal">
+                                <controls:LucideIcon Icon="type" Width="14" Height="14" Margin="0,0,6,0" />
+                                <TextBlock Text="Font" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                        <Button Margin="3" Style="{StaticResource BaseButtonStyle}"
+                                Command="{Binding RequestEditModeCommand}"
+                                ToolTip="Toggle edit mode">
+                            <StackPanel Orientation="Horizontal">
+                                <controls:LucideIcon Icon="pencil" Width="14" Height="14" Margin="0,0,6,0" />
+                                <TextBlock Text="Edit Mode" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                    </UniformGrid>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- 3. Edit Mode Toolbar (Between Header and Body) per SPEC section 6 and 8 -->
+        <Border Grid.Row="2"
+                Margin="16,0,16,8"
+                Background="Transparent"
+                BorderBrush="{DynamicResource Brush.Border}"
+                BorderThickness="1"
+                CornerRadius="{DynamicResource Radius.Card}"
+                Padding="12,6"
+                Visibility="{Binding IsEditMode, Converter={StaticResource BoolToVis}}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <!-- Left: Edit Mode Label & Deep Freeze Notice / Unwritable Folder Warning -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Border Background="{DynamicResource Brush.Accent}" CornerRadius="{DynamicResource Radius.Sm}" Padding="6,2" Margin="0,0,12,0">
+                        <TextBlock Text="EDIT MODE" FontWeight="Bold" FontSize="11" Foreground="#FFFFFF" />
+                    </Border>
+                    <StackPanel Orientation="Horizontal" Visibility="{Binding IsDeepFreezeInstalled, Converter={StaticResource BoolToVis}}">
+                        <controls:LucideIcon Icon="shield-alert" Width="14" Height="14"
+                                            Foreground="{DynamicResource Brush.Warning}" Margin="0,0,6,0" />
+                        <TextBlock Text="Changes made while Deep Freeze is active are lost on restart."
+                                   Foreground="{DynamicResource Brush.TextSecondary}"
+                                   FontSize="12"
+                                   VerticalAlignment="Center" />
+                    </StackPanel>
+                    <!-- Unwritable Directory Warning per SPEC section 12 -->
+                    <Border Background="{DynamicResource Brush.Danger}"
+                            CornerRadius="{DynamicResource Radius.Sm}"
+                            Padding="6,2"
+                            Margin="12,0,0,0"
+                            Visibility="{Binding IsDirectoryWritable, Converter={StaticResource InverseBoolToVis}}">
+                        <StackPanel Orientation="Horizontal">
+                            <controls:LucideIcon Icon="shield-alert" Width="13" Height="13" Foreground="#FFFFFF" Margin="0,0,4,0" />
+                            <TextBlock Text="Data folder is not writable! Changes cannot be saved."
+                                       Foreground="#FFFFFF"
+                                       FontSize="11.5"
+                                       FontWeight="SemiBold"
+                                       VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <!-- Right: Action Buttons & Icon Size Slider -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                    <!-- + Add Program -->
+                    <Button Style="{StaticResource BaseButtonStyle}"
+                            Command="{Binding AddProgramCommand}"
+                            Padding="10,4"
+                            Margin="0,0,6,0"
+                            ToolTip="Add program (.exe, .lnk, .bat, .cmd)">
+                        <StackPanel Orientation="Horizontal">
+                            <controls:LucideIcon Icon="plus" Width="14" Height="14" Margin="0,0,6,0" />
+                            <TextBlock Text="Add Program" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+
+                    <!-- + Add Website -->
+                    <Button Style="{StaticResource BaseButtonStyle}"
+                            Command="{Binding AddWebsiteCommand}"
+                            Padding="10,4"
+                            Margin="0,0,6,0"
+                            ToolTip="Add website URL">
+                        <StackPanel Orientation="Horizontal">
+                            <controls:LucideIcon Icon="globe" Width="14" Height="14" Margin="0,0,6,0" />
+                            <TextBlock Text="Add Website" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+
+                    <!-- + Add Folder -->
+                    <Button Style="{StaticResource BaseButtonStyle}"
+                            Command="{Binding AddFolderCommand}"
+                            Padding="10,4"
+                            Margin="0,0,12,0"
+                            ToolTip="Add folder shortcut">
+                        <StackPanel Orientation="Horizontal">
+                            <controls:LucideIcon Icon="folder-plus" Width="14" Height="14" Margin="0,0,6,0" />
+                            <TextBlock Text="Add Folder" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+
+                    <!-- Separator -->
+                    <Border Width="1" Height="20" Background="{DynamicResource Brush.Border}" Margin="0,0,12,0" />
+
+                    <!-- Icon Size Slider (48px to 160px) -->
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,16,0">
+                        <controls:LucideIcon Icon="sliders" Width="14" Height="14"
+                                            Foreground="{DynamicResource Brush.TextSecondary}" Margin="0,0,6,0" />
+                        <TextBlock Text="Size:" FontSize="12" Foreground="{DynamicResource Brush.TextSecondary}"
+                                   VerticalAlignment="Center" Margin="0,0,8,0" />
+                        <Slider Minimum="48" Maximum="160"
+                                Value="{Binding IconSize, Mode=TwoWay}"
+                                Width="100"
+                                VerticalAlignment="Center"
+                                ToolTip="Adjust card and icon size (48px - 160px)" />
+                        <TextBlock Text="{Binding IconSize, StringFormat='{}{0:0}px'}"
+                                   FontSize="11.5"
+                                   Foreground="{DynamicResource Brush.TextPrimary}"
+                                   FontWeight="SemiBold"
+                                   Width="42"
+                                   TextAlignment="Right"
+                                   VerticalAlignment="Center"
+                                   Margin="6,0,0,0" />
+                    </StackPanel>
+
+                    <!-- Exit Edit Mode Button -->
+                    <Button Style="{StaticResource BaseButtonStyle}"
+                            Command="{Binding ExitEditModeCommand}"
+                            Padding="10,4"
+                            ToolTip="Exit Edit Mode">
+                        <StackPanel Orientation="Horizontal">
+                            <controls:LucideIcon Icon="x" Width="14" Height="14" Margin="0,0,6,0" />
+                            <TextBlock Text="Exit Edit Mode" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- 4. Body: Tabs & Program Grid -->
+        <Grid Grid.Row="3" Margin="16,4,16,16" PreviewMouseLeftButtonDown="BodyGrid_PreviewMouseLeftButtonDown">
+            <Grid.RowDefinitions>
+                <!-- Tab Bar & Search -->
+                <RowDefinition Height="Auto" />
+                <!-- Grid Area -->
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <!-- Tab Bar & Search Row -->
+            <Grid Grid.Row="0" Margin="0,0,0,12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <!-- Scrollable Tab Bar per SPEC section 8 -->
+                <ScrollViewer HorizontalScrollBarVisibility="Auto"
+                              VerticalScrollBarVisibility="Disabled"
+                              Focusable="False">
+                    <ListBox ItemsSource="{Binding Tabs}"
+                             SelectedItem="{Binding SelectedTab, Mode=TwoWay}"
+                             Background="Transparent"
+                             BorderThickness="0"
+                             ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                             ScrollViewer.VerticalScrollBarVisibility="Disabled">
+                        <ListBox.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Horizontal" />
+                            </ItemsPanelTemplate>
+                        </ListBox.ItemsPanel>
+                        <ListBox.ItemContainerStyle>
+                            <Style TargetType="{x:Type ListBoxItem}">
+                                <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+                                <Setter Property="Background" Value="Transparent" />
+                                <Setter Property="Foreground" Value="{DynamicResource Brush.TextSecondary}" />
+                                <Setter Property="BorderThickness" Value="0,0,0,2" />
+                                <Setter Property="BorderBrush" Value="Transparent" />
+                                <Setter Property="Padding" Value="14,10" />
+                                <Setter Property="Margin" Value="0,0,6,0" />
+                                <Setter Property="Cursor" Value="Hand" />
+                                <Setter Property="FontSize" Value="{Binding DataContext.FontScale, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource ScaleFont}, ConverterParameter='14'}" />
+                                <Setter Property="FontWeight" Value="SemiBold" />
+                                <Setter Property="AllowDrop" Value="True" />
+                                <EventSetter Event="DragOver" Handler="TabItem_DragOver" />
+                                <EventSetter Event="Drop" Handler="TabItem_Drop" />
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="{x:Type ListBoxItem}">
+                                            <Border x:Name="border"
+                                                    Background="{TemplateBinding Background}"
+                                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                                    CornerRadius="4,4,0,0"
+                                                    Padding="{TemplateBinding Padding}"
+                                                    SnapsToDevicePixels="True">
+                                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                            </Border>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter Property="Foreground" Value="{DynamicResource Brush.TextPrimary}" />
+                                                    <Setter TargetName="border" Property="Background" Value="{DynamicResource Brush.SurfaceHover}" />
+                                                </Trigger>
+                                                <Trigger Property="IsSelected" Value="True">
+                                                    <Setter Property="Foreground" Value="{DynamicResource Brush.Accent}" />
+                                                    <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource Brush.Accent}" />
+                                                    <Setter TargetName="border" Property="Background" Value="Transparent" />
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </ListBox.ItemContainerStyle>
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <controls:LucideIcon Icon="{Binding Icon}"
+                                                        Width="18"
+                                                        Height="18"
+                                                        Margin="0,0,8,0" />
+                                    <TextBlock Text="{Binding Name}" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </ScrollViewer>
+
+                <!-- Search Box per SPEC section 8 & 10 (Transparent with outline) -->
+                <Border Grid.Column="1"
+                        Width="260"
+                        Background="Transparent"
+                        BorderBrush="{DynamicResource Brush.Border}"
+                        BorderThickness="1"
+                        CornerRadius="{DynamicResource Radius.Card}"
+                        Padding="8,4">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <controls:LucideIcon Grid.Column="0"
+                                            Icon="search"
+                                            Width="16"
+                                            Height="16"
+                                            Foreground="{DynamicResource Brush.TextSecondary}"
+                                            Margin="2,0,6,0" />
+                        <TextBox Grid.Column="1"
+                                 Text="{Binding SearchQuery, UpdateSourceTrigger=PropertyChanged}"
+                                 BorderThickness="0"
+                                 Background="Transparent"
+                                 Foreground="{DynamicResource Brush.TextPrimary}"
+                                 VerticalAlignment="Center"
+                                 FontSize="13" />
+                        <Button Grid.Column="2"
+                                Style="{StaticResource IconButtonStyle}"
+                                Command="{Binding ClearSearchCommand}"
+                                ToolTip="Clear search (Esc)">
+                            <controls:LucideIcon Icon="x" Width="12" Height="12"
+                                                Foreground="{DynamicResource Brush.TextSecondary}" />
+                        </Button>
+                    </Grid>
+                </Border>
+            </Grid>
+
+            <!-- Program Grid Area with Empty State per SPEC section 8, 9, 10 (Transparent with outline) -->
+            <Grid Grid.Row="1">
+                <!-- Background Container for Program Grid -->
+                <Border Background="Transparent"
+                        BorderBrush="{DynamicResource Brush.Border}"
+                        BorderThickness="1"
+                        CornerRadius="{DynamicResource Radius.Card}"
+                        ClipToBounds="True" />
+
+                <!-- Program Grid ListBox (Transparent background so wallpaper/scrim shows through) -->
+                <ListBox x:Name="ProgramGridListBox"
+                         ItemsSource="{Binding FilteredItems}"
+                         ItemContainerStyle="{StaticResource ProgramCardItemStyle}"
+                         SelectionMode="Extended"
+                         AllowDrop="True"
+                         Background="Transparent"
+                         BorderThickness="0"
+                         Padding="10"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                         ScrollViewer.VerticalScrollBarVisibility="Auto"
+                         KeyboardNavigation.DirectionalNavigation="Cycle"
+                         PreviewMouseLeftButtonDown="ProgramGridListBox_PreviewMouseLeftButtonDown"
+                         PreviewMouseMove="ProgramGridListBox_PreviewMouseMove"
+                         PreviewMouseLeftButtonUp="ProgramGridListBox_PreviewMouseLeftButtonUp"
+                         DragOver="ProgramGrid_DragOver"
+                         Drop="ProgramGrid_Drop"
+                         KeyDown="ProgramGridListBox_KeyDown"
+                         ContextMenuOpening="ProgramGridListBox_ContextMenuOpening">
+                    <ListBox.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel Orientation="Horizontal" />
+                        </ItemsPanelTemplate>
+                    </ListBox.ItemsPanel>
+                    <ListBox.ContextMenu>
+                        <ContextMenu>
+                            <MenuItem Header="Add program..." Command="{Binding AddProgramCommand}">
+                                <MenuItem.Icon>
+                                    <controls:LucideIcon Icon="plus" Width="14" Height="14" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem Header="Add website..." Command="{Binding AddWebsiteCommand}">
+                                <MenuItem.Icon>
+                                    <controls:LucideIcon Icon="globe" Width="14" Height="14" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem Header="Add folder..." Command="{Binding AddFolderCommand}">
+                                <MenuItem.Icon>
+                                    <controls:LucideIcon Icon="folder-plus" Width="14" Height="14" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                        </ContextMenu>
+                    </ListBox.ContextMenu>
+                </ListBox>
+
+                <!-- Empty State per SPEC section 8 & 10 -->
+                <Border Background="Transparent"
+                        BorderThickness="0"
+                        Visibility="{Binding HasNoItems, Converter={StaticResource BoolToVis}}"
+                        IsHitTestVisible="False">
+                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <controls:LucideIcon Icon="search"
+                                            Width="48"
+                                            Height="48"
+                                            Foreground="{DynamicResource Brush.TextSecondary}"
+                                            Opacity="0.4"
+                                            HorizontalAlignment="Center"
+                                            Margin="0,0,0,16"
+                                            Visibility="{Binding IsSearching, Converter={StaticResource BoolToVis}}" />
+                        <controls:LucideIcon Icon="layout-grid"
+                                            Width="48"
+                                            Height="48"
+                                            Foreground="{DynamicResource Brush.TextSecondary}"
+                                            Opacity="0.4"
+                                            HorizontalAlignment="Center"
+                                            Margin="0,0,0,16"
+                                            Visibility="{Binding IsSearching, Converter={StaticResource InverseBoolToVis}}" />
+                        <TextBlock Text="{Binding EmptyStateMessage}"
+                                   FontSize="16"
+                                   FontWeight="SemiBold"
+                                   Foreground="{DynamicResource Brush.TextSecondary}"
+                                   HorizontalAlignment="Center" />
+                </StackPanel>
+                </Border>
+            </Grid>
+        </Grid>
+
+        <!-- In-App Floating Toast Notification (Auto-dismisses in 4s or on X click) -->
+        <Border Grid.Row="3"
+                VerticalAlignment="Bottom"
+                HorizontalAlignment="Center"
+                Margin="0,0,0,24"
+                Background="#EE1E2026"
+                BorderBrush="{DynamicResource Brush.Border}"
+                BorderThickness="1"
+                CornerRadius="20"
+                Padding="16,8"
+                Visibility="{Binding ShowInAppMessage, Converter={StaticResource BoolToVis}}">
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="16" Direction="270" ShadowDepth="3" Opacity="0.4" Color="#000000" />
+            </Border.Effect>
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <controls:LucideIcon Icon="info" Width="16" Height="16"
+                                    Foreground="{DynamicResource Brush.Accent}"
+                                    Margin="0,0,10,0" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding InAppMessage}"
+                           Foreground="{DynamicResource Brush.TextPrimary}"
+                           VerticalAlignment="Center"
+                           FontSize="12.5"
+                           FontWeight="SemiBold" />
+                <Button Style="{StaticResource IconButtonStyle}"
+                        Command="{Binding DismissMessageCommand}"
+                        Margin="12,0,0,0"
+                        Width="22" Height="22"
+                        ToolTip="Dismiss">
+                    <controls:LucideIcon Icon="x" Width="12" Height="12" Foreground="{DynamicResource Brush.TextSecondary}" />
+                </Button>
+            </StackPanel>
+        </Border>
+
+        <!-- 5. Modal & Dialog Host Overlay (Covering full window) -->
+        <Grid Grid.Row="0" Grid.RowSpan="4"
+              Background="#B2000000"
+              Visibility="{Binding IsModalOpen, Converter={StaticResource BoolToVis}}"
+              KeyboardNavigation.TabNavigation="Cycle">
+
+            <!-- A. FULL SETTINGS MODAL CONTAINER (SPEC Section 11 & 12) -->
+            <Border Background="{DynamicResource Brush.Surface}"
+                    BorderBrush="{DynamicResource Brush.Border}"
+                    BorderThickness="1"
+                    CornerRadius="{DynamicResource Radius.Modal}"
+                    Width="840" Height="580"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Padding="0"
+                    Visibility="{Binding IsSettingsHostVisible, Converter={StaticResource BoolToVis}}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <!-- Header -->
+                        <RowDefinition Height="Auto" />
+                        <!-- Deep Freeze Banner -->
+                        <RowDefinition Height="Auto" />
+                        <!-- Content: Sidebar + Pages -->
+                        <RowDefinition Height="*" />
+                        <!-- Footer -->
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <!-- Title & Close -->
+                    <Grid Grid.Row="0" Margin="24,18,24,12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Settings"
+                                   FontSize="17"
+                                   FontWeight="Bold"
+                                   Foreground="{DynamicResource Brush.TextPrimary}"
+                                   VerticalAlignment="Center" />
+                        <Button Grid.Column="1"
+                                Style="{StaticResource IconButtonStyle}"
+                                Command="{Binding CloseModalCommand}"
+                                ToolTip="Close (Esc)">
+                            <controls:LucideIcon Icon="x" Width="16" Height="16" />
+                        </Button>
+                    </Grid>
+
+                    <!-- Non-blocking Deep Freeze Banner & Unwritable Directory Warning per SPEC sections 8 & 12 -->
+                    <Border Grid.Row="1"
+                            Background="{DynamicResource Brush.SurfaceHover}"
+                            BorderBrush="{DynamicResource Brush.Border}"
+                            BorderThickness="0,1,0,1"
+                            Padding="24,7"
+                            Margin="0,0,0,6"
+                            Visibility="{Binding IsDeepFreezeInstalled, Converter={StaticResource BoolToVis}}">
+                        <Grid>
+                            <StackPanel Orientation="Horizontal" Visibility="{Binding IsDeepFreezeInstalled, Converter={StaticResource BoolToVis}}">
+                                <controls:LucideIcon Icon="shield-alert" Width="15" Height="15"
+                                                    Foreground="{DynamicResource Brush.Warning}"
+                                                    Margin="0,0,8,0" />
+                                <TextBlock Text="Changes made while Deep Freeze is active are lost on restart."
+                                           Foreground="{DynamicResource Brush.TextSecondary}"
+                                           FontSize="11.5"
+                                           VerticalAlignment="Center" />
+                            </StackPanel>
+                            <!-- Unwritable Directory Warning per SPEC section 12 -->
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right"
+                                        Visibility="{Binding IsDirectoryWritable, Converter={StaticResource InverseBoolToVis}}">
+                                <controls:LucideIcon Icon="shield-alert" Width="15" Height="15"
+                                                    Foreground="{DynamicResource Brush.Danger}"
+                                                    Margin="0,0,6,0" />
+                                <TextBlock Text="Data folder is not writable! Changes cannot be saved."
+                                           Foreground="{DynamicResource Brush.Danger}"
+                                           FontWeight="SemiBold"
+                                           FontSize="11.5"
+                                           VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <!-- Body: Sidebar Navigation + Pages -->
+                    <Grid Grid.Row="2">
+                        <Grid.ColumnDefinitions>
+                            <!-- Sidebar -->
+                            <ColumnDefinition Width="180" />
+                            <!-- Divider -->
+                            <ColumnDefinition Width="1" />
+                            <!-- Page Content -->
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Left Navigation Sidebar -->
+                        <StackPanel Grid.Column="0" Margin="14,10,10,10">
+                            <!-- 0: General -->
+                            <Button Style="{StaticResource SettingsNavButtonStyle}"
+                                    Command="{Binding SelectSettingsPageCommand}" CommandParameter="0"
+                                    Tag="{Binding SettingsPageIndex, Converter={StaticResource EqToBool}, ConverterParameter=0}">
+                                <StackPanel Orientation="Horizontal">
+                                    <controls:LucideIcon Icon="sliders" Width="15" Height="15" Margin="0,0,10,0" />
+                                    <TextBlock Text="General" FontWeight="SemiBold" FontSize="13" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+                            <!-- 1: Appearance -->
+                            <Button Style="{StaticResource SettingsNavButtonStyle}"
+                                    Command="{Binding SelectSettingsPageCommand}" CommandParameter="1"
+                                    Tag="{Binding SettingsPageIndex, Converter={StaticResource EqToBool}, ConverterParameter=1}">
+                                <StackPanel Orientation="Horizontal">
+                                    <controls:LucideIcon Icon="palette" Width="15" Height="15" Margin="0,0,10,0" />
+                                    <TextBlock Text="Appearance" FontWeight="SemiBold" FontSize="13" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+                            <!-- 2: Tabs -->
+                            <Button Style="{StaticResource SettingsNavButtonStyle}"
+                                    Command="{Binding SelectSettingsPageCommand}" CommandParameter="2"
+                                    Tag="{Binding SettingsPageIndex, Converter={StaticResource EqToBool}, ConverterParameter=2}">
+                                <StackPanel Orientation="Horizontal">
+                                    <controls:LucideIcon Icon="layout-grid" Width="15" Height="15" Margin="0,0,10,0" />
+                                    <TextBlock Text="Tabs" FontWeight="SemiBold" FontSize="13" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+                            <!-- 3: Security -->
+                            <Button Style="{StaticResource SettingsNavButtonStyle}"
+                                    Command="{Binding SelectSettingsPageCommand}" CommandParameter="3"
+                                    Tag="{Binding SettingsPageIndex, Converter={StaticResource EqToBool}, ConverterParameter=3}">
+                                <StackPanel Orientation="Horizontal">
+                                    <controls:LucideIcon Icon="shield" Width="15" Height="15" Margin="0,0,10,0" />
+                                    <TextBlock Text="Security" FontWeight="SemiBold" FontSize="13" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+                            <!-- 4: Backup -->
+                            <Button Style="{StaticResource SettingsNavButtonStyle}"
+                                    Command="{Binding SelectSettingsPageCommand}" CommandParameter="4"
+                                    Tag="{Binding SettingsPageIndex, Converter={StaticResource EqToBool}, ConverterParameter=4}">
+                                <StackPanel Orientation="Horizontal">
+                                    <controls:LucideIcon Icon="archive" Width="15" Height="15" Margin="0,0,10,0" />
+                                    <TextBlock Text="Backup" FontWeight="SemiBold" FontSize="13" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+                            <!-- 5: About -->
+                            <Button Style="{StaticResource SettingsNavButtonStyle}"
+                                    Command="{Binding SelectSettingsPageCommand}" CommandParameter="5"
+                                    Tag="{Binding SettingsPageIndex, Converter={StaticResource EqToBool}, ConverterParameter=5}">
+                                <StackPanel Orientation="Horizontal">
+                                    <controls:LucideIcon Icon="info" Width="15" Height="15" Margin="0,0,10,0" />
+                                    <TextBlock Text="About" FontWeight="SemiBold" FontSize="13" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+
+                        <!-- Vertical Divider -->
+                        <Rectangle Grid.Column="1" Fill="{DynamicResource Brush.Border}" />
+
+                        <!-- Right Pages Container (Scrollable) -->
+                        <ScrollViewer Grid.Column="2" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="20,10,24,12">
+                            <Grid>
+                                <!-- PAGE 0: GENERAL -->
+                                <StackPanel Visibility="{Binding SettingsPageIndex, Converter={StaticResource EqToVis}, ConverterParameter=0}">
+                                    <TextBlock Text="General Settings" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource Brush.TextPrimary}" Margin="0,0,0,16" />
+
+                                    <!-- Shop Name -->
+                                    <TextBlock Text="Shop Name" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextSecondary}" Margin="0,0,0,4" />
+                                    <TextBox Text="{Binding ShopName, UpdateSourceTrigger=PropertyChanged}"
+                                             FontSize="13" Padding="8,6" Background="{DynamicResource Brush.Background}"
+                                             Foreground="{DynamicResource Brush.TextPrimary}" BorderBrush="{DynamicResource Brush.Border}"
+                                             BorderThickness="1" Margin="0,0,0,4" />
+                                    <TextBlock Text="Displayed in the top title bar of the launcher." FontSize="11.5" Foreground="{DynamicResource Brush.TextSecondary}" Margin="0,0,0,16" />
+
+                                    <!-- Shop Logo -->
+                                    <TextBlock Text="Shop Logo (Optional)" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextSecondary}" Margin="0,0,0,4" />
+                                    <Grid Margin="0,0,0,4">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="12" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <!-- Logo Preview Box -->
+                                        <Border Grid.Column="0" Width="52" Height="52"
+                                                Background="{DynamicResource Brush.Background}"
+                                                BorderBrush="{DynamicResource Brush.Border}"
+                                                BorderThickness="1" CornerRadius="6">
+                                            <Grid>
+                                                <Image Source="{Binding ShopLogoSource}" Stretch="Uniform" Margin="4"
+                                                       Visibility="{Binding ShopLogoSource, Converter={StaticResource NullToVis}}" />
+                                                <controls:LucideIcon Icon="layout-grid" Width="24" Height="24"
+                                                                    Foreground="{DynamicResource Brush.Accent}"
+                                                                    HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                                    Visibility="{Binding ShopLogoSource, Converter={StaticResource NotNullToVis}}" />
+                                            </Grid>
+                                        </Border>
+                                        <StackPanel Grid.Column="2" VerticalAlignment="Center">
+                                            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                                <Button Content="Browse Logo..." Style="{StaticResource BaseButtonStyle}"
+                                                        Padding="12,6" Margin="0,0,8,0"
+                                                        Command="{Binding BrowseLogoCommand}" />
+                                                <Button Content="Clear" Style="{StaticResource BaseButtonStyle}"
+                                                        Padding="10,6"
+                                                        Command="{Binding ClearLogoCommand}"
+                                                        Visibility="{Binding ShopLogoSource, Converter={StaticResource NullToVis}}" />
+                                            </StackPanel>
+                                            <TextBlock Text="Replaces the title bar menu icon. Supported formats: PNG, JPG, BMP, ICO."
+                                                       FontSize="11.5" Foreground="{DynamicResource Brush.TextSecondary}" />
+                                        </StackPanel>
+                                    </Grid>
+
+                                    <!-- Start with Windows Toggle -->
+                                    <TextBlock Text="System Startup" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextSecondary}" Margin="0,16,0,6" />
+                                    <CheckBox IsChecked="{Binding StartWithWindows}"
+                                              FontSize="13" Foreground="{DynamicResource Brush.TextPrimary}"
+                                              Margin="0,0,0,4">
+                                        <TextBlock Text="Start with Windows automatically (HKLM Run)" FontWeight="SemiBold" />
+                                    </CheckBox>
+                                    <TextBlock Text="Runs Chromatic Menu maximized when the computer boots. Requires administrator privileges to change."
+                                               FontSize="11.5" Foreground="{DynamicResource Brush.TextSecondary}" TextWrapping="Wrap" Margin="0,0,0,4" />
+                                    <TextBlock Text="{Binding StartupError}"
+                                               Foreground="{DynamicResource Brush.Danger}" FontSize="12" TextWrapping="Wrap" Margin="0,4,0,0"
+                                               Visibility="{Binding StartupError, Converter={StaticResource BoolToVis}}" />
+                                </StackPanel>
+
+                                <!-- PAGE 1: APPEARANCE -->
+                                <StackPanel Visibility="{Binding SettingsPageIndex, Converter={StaticResource EqToVis}, ConverterParameter=1}">
+                                    <TextBlock Text="Appearance Settings" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource Brush.TextPrimary}" Margin="0,0,0,16" />
+
+                                    <!-- Theme Mode -->
+                                    <TextBlock Text="Theme Mode" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextSecondary}" Margin="0,0,0,6" />
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                                        <RadioButton Content="Dark Mode" GroupName="ThemeGroup"
+                                                     IsChecked="{Binding IsDarkMode}"
+                                                     FontSize="13" Foreground="{DynamicResource Brush.TextPrimary}" Margin="0,0,20,0" />
+                                        <RadioButton Content="Light Mode" GroupName="ThemeGroup"
+                                                     IsChecked="{Binding IsLightMode}"
+                                                     FontSize="13" Foreground="{DynamicResource Brush.TextPrimary}" />
+                                    </StackPanel>
+
+                                    <!-- Accent Color Palette -->
+                                    <TextBlock Text="Accent Color" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextSecondary}" Margin="0,0,0,6" />
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                        <!-- Swatches -->
+                                        <Button Width="26" Height="26" Background="#0284C7" BorderThickness="0" Margin="0,0,6,0" Cursor="Hand"
+                                                ToolTip="Sky Blue (#0284C7)" Command="{Binding SelectAccentColorCommand}" CommandParameter="#0284C7" />
+                                        <Button Width="26" Height="26" Background="#6366F1" BorderThickness="0" Margin="0,0,6,0" Cursor="Hand"
+                                                ToolTip="Indigo (#6366F1)" Command="{Binding SelectAccentColorCommand}" CommandParameter="#6366F1" />
+                                        <Button Width="26" Height="26" Background="#10B981" BorderThickness="0" Margin="0,0,6,0" Cursor="Hand"
+                                                ToolTip="Emerald (#10B981)" Command="{Binding SelectAccentColorCommand}" CommandParameter="#10B981" />
+                                        <Button Width="26" Height="26" Background="#F59E0B" BorderThickness="0" Margin="0,0,6,0" Cursor="Hand"
+                                                ToolTip="Amber (#F59E0B)" Command="{Binding SelectAccentColorCommand}" CommandParameter="#F59E0B" />
+                                        <Button Width="26" Height="26" Background="#F43F5E" BorderThickness="0" Margin="0,0,6,0" Cursor="Hand"
+                                                ToolTip="Rose (#F43F5E)" Command="{Binding SelectAccentColorCommand}" CommandParameter="#F43F5E" />
+                                        <Button Width="26" Height="26" Background="#A855F7" BorderThickness="0" Margin="0,0,6,0" Cursor="Hand"
+                                                ToolTip="Purple (#A855F7)" Command="{Binding SelectAccentColorCommand}" CommandParameter="#A855F7" />
+                                        <Button Width="26" Height="26" Background="#06B6D4" BorderThickness="0" Margin="0,0,6,0" Cursor="Hand"
+                                                ToolTip="Cyan (#06B6D4)" Command="{Binding SelectAccentColorCommand}" CommandParameter="#06B6D4" />
+                                        <Button Width="26" Height="26" Background="#EA580C" BorderThickness="0" Margin="0,0,12,0" Cursor="Hand"
+                                                ToolTip="Orange (#EA580C)" Command="{Binding SelectAccentColorCommand}" CommandParameter="#EA580C" />
+
+                                        <!-- Custom Hex Box -->
+                                        <TextBox Text="{Binding SelectedAccentColor, UpdateSourceTrigger=PropertyChanged}"
+                                                 Width="90" FontSize="13" Padding="6,4"
+                                                 Background="{DynamicResource Brush.Background}" Foreground="{DynamicResource Brush.TextPrimary}"
+                                                 BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1" />
+                                    </StackPanel>
+
+                                    <!-- Custom Colors Section -->
+                                    <Border Background="{DynamicResource Brush.Background}" BorderBrush="{DynamicResource Brush.Border}"
+                                            BorderThickness="1" CornerRadius="6" Padding="12" Margin="0,8,0,16">
+                                        <StackPanel>
+                                            <TextBlock Text="Custom Color Overrides" FontSize="12.5" FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextPrimary}" Margin="0,0,0,8" />
+                                            <Grid Margin="0,0,0,8">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="8" />
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="8" />
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="8" />
+                                                    <ColumnDefinition Width="*" />
+                                                </Grid.ColumnDefinitions>
+                                                <!-- Background -->
+                                                <StackPanel Grid.Column="0">
+                                                    <TextBlock Text="Background" FontSize="11" Foreground="{DynamicResource Brush.TextSecondary}" Margin="0,0,0,2" />
+                                                    <TextBox Text="{Binding CustomBgColor, UpdateSourceTrigger=PropertyChanged}" FontSize="12" Padding="4,3" />
+                                                </StackPanel>
+                                                <!-- Surface -->
+                                                <StackPanel Grid.Column="2">
+                                                    <TextBlock Text="Surface" FontSize="11" Foreground="{DynamicResource Brush.TextSecondary}" Margin="0,0,0,2" />
+                                                    <TextBox Text="{Binding CustomSurfaceColor, UpdateSourceTrigger=PropertyChanged}" FontSize="12" Padding="4,3" />
+                                                </StackPanel>
+                                                <!-- Text -->
+                                                <StackPanel Grid.Column="4">
+                                                    <TextBlock Text="Text" FontSize="11" Foreground="{DynamicResource Brush.TextSecondary}" Margin="0,0,0,2" />
+                                                    <TextBox Text="{Binding CustomTextColor, UpdateSourceTrigger=PropertyChanged}" FontSize="12" Padding="4,3" />
+                                                </StackPanel>
+                                                <!-- Accent -->
+                                                <StackPanel Grid.Column="6">
+                                                    <TextBlock Text="Accent" FontSize="11" Foreground="{DynamicResource Brush.TextSecondary}" Margin="0,0,0,2" />
+                                                    <TextBox Text="{Binding CustomAccentColor, UpdateSourceTrigger=PropertyChanged}" FontSize="12" Padding="4,3" />
+                                                </StackPanel>
+                                            </Grid>
+                                            <StackPanel Orientation="Horizontal">
+                                                <Button Content="Apply Custom Colors" Style="{StaticResource BaseButtonStyle}"
+                                                        Padding="12,5" Margin="0,0,8,0" Command="{Binding ApplyCustomColorsCommand}" />
+                                                <Button Content="Reset to Theme Defaults" Style="{StaticResource BaseButtonStyle}"
+                                                        Padding="12,5" Command="{Binding ResetAppearanceDefaultsCommand}" />
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <!-- Wallpaper Image -->
+                                    <TextBlock Text="Wallpaper Image" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextSecondary}" Margin="0,0,0,4" />
+                                    <Grid Margin="0,0,0,4">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="12" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <Border Grid.Column="0" Width="80" Height="48"
+                                                Background="{DynamicResource Brush.Background}"
+                                                BorderBrush="{DynamicResource Brush.Border}"
+                                                BorderThickness="1" CornerRadius="4">
+                                            <Grid>
+                                                <Image Source="{Binding WallpaperSource}" Stretch="UniformToFill"
+                                                       Visibility="{Binding WallpaperSource, Converter={StaticResource NullToVis}}" />
+                                                <TextBlock Text="No Image" FontSize="10" Foreground="{DynamicResource Brush.TextSecondary}"
+                                                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                           Visibility="{Binding WallpaperSource, Converter={StaticResource NotNullToVis}}" />
+                                            </Grid>
+                                        </Border>
+                                        <StackPanel Grid.Column="2" VerticalAlignment="Center">
+                                            <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                                <Button Content="Browse Wallpaper..." Style="{StaticResource BaseButtonStyle}"
+                                                        Padding="12,6" Margin="0,0,8,0"
+                                                        Command="{Binding BrowseWallpaperCommand}" />
+                                                <Button Content="Clear" Style="{StaticResource BaseButtonStyle}"
+                                                        Padding="10,6"
+                                                        Command="{Binding ClearWallpaperCommand}"
+                                                        Visibility="{Binding WallpaperSource, Converter={StaticResource NullToVis}}" />
+                                            </StackPanel>
+                                            <TextBlock Text="Drawn with Uniform fit centered behind cards with theme scrim."
+                                                       FontSize="11.5" Foreground="{DynamicResource Brush.TextSecondary}" />
+                                        </StackPanel>
+                                    </Grid>
+
+                                    <!-- Font Family & Font Scale -->
+                                    <Grid Margin="0,16,0,0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="16" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+
+                                        <!-- Font Family -->
+                                        <StackPanel Grid.Column="0">
+                                            <TextBlock Text="Font Family" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextSecondary}" Margin="0,0,0,4" />
+                                            <ComboBox ItemsSource="{Binding AvailableFontFamilies}"
+                                                      SelectedItem="{Binding SelectedFontFamily}"
+                                                      FontSize="13" Padding="8,6" />
+                                        </StackPanel>
+
+                                        <!-- Font Scale -->
+                                        <StackPanel Grid.Column="2">
+                                            <Grid Margin="0,0,0,4">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Text="Font Scale" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextSecondary}" />
+                                                <TextBlock Grid.Column="1" Text="{Binding FontScaleDisplay}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource Brush.Accent}" />
+                                            </Grid>
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="8" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+                                                <Slider Grid.Column="0" Value="{Binding FontScale}"
+                                                        Minimum="0.8" Maximum="1.3" SmallChange="0.05" LargeChange="0.05"
+                                                        TickFrequency="0.05" IsSnapToTickEnabled="True"
+                                                        VerticalAlignment="Center" />
+                                                <Button Grid.Column="2" Content="Reset" Style="{StaticResource BaseButtonStyle}"
+                                                        Padding="8,4" FontSize="11"
+                                                        Command="{Binding ResetFontScaleCommand}" />
+                                            </Grid>
+                                        </StackPanel>
+                                    </Grid>
+                                </StackPanel>
+
+                                <!-- PAGE 2: TABS -->
+                                <StackPanel Visibility="{Binding SettingsPageIndex, Converter={StaticResource EqToVis}, ConverterParameter=2}">
+                                    <TextBlock Text="Tabs Management" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource Brush.TextPrimary}" Margin="0,0,0,16" />
+
+                                    <!-- Existing Tabs List -->
+                                    <TextBlock Text="Configured Tabs (Drag or use arrows to reorder, min 1 tab)" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextSecondary}" Margin="0,0,0,6" />
+                                    <Border Background="{DynamicResource Brush.Background}" BorderBrush="{DynamicResource Brush.Border}"
+                                            BorderThickness="1" CornerRadius="6" Padding="6" Margin="0,0,0,16">
+                                        <ItemsControl ItemsSource="{Binding Tabs}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Border Background="{DynamicResource Brush.Surface}" BorderBrush="{DynamicResource Brush.Border}"
+                                                            BorderThickness="1" CornerRadius="4" Padding="10,6" Margin="0,3">
+                                                        <Grid>
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="Auto" />
+                                                                <ColumnDefinition Width="*" />
+                                                                <ColumnDefinition Width="Auto" />
+                                                            </Grid.ColumnDefinitions>
+
+                                                            <!-- Tab Icon -->
+                                                            <controls:LucideIcon Grid.Column="0" Icon="{Binding Icon}" Width="16" Height="16"
+                                                                                Foreground="{DynamicResource Brush.Accent}" Margin="0,0,10,0" VerticalAlignment="Center" />
+
+                                                            <!-- Tab Name -->
+                                                            <TextBlock Grid.Column="1" Text="{Binding Name}" FontWeight="SemiBold" FontSize="13"
+                                                                       Foreground="{DynamicResource Brush.TextPrimary}" VerticalAlignment="Center" />
+
+                                                            <!-- Action Buttons: Move Up, Move Down, Icon, Delete -->
+                                                            <StackPanel Grid.Column="2" Orientation="Horizontal">
+                                                                <Button Style="{StaticResource IconButtonStyle}" Margin="0,0,4,0" ToolTip="Move Tab Up"
+                                                                        Command="{Binding DataContext.MoveTabUpCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                        CommandParameter="{Binding}">
+                                                                    <controls:LucideIcon Icon="arrow-up" Width="14" Height="14" />
+                                                                </Button>
+                                                                <Button Style="{StaticResource IconButtonStyle}" Margin="0,0,4,0" ToolTip="Move Tab Down"
+                                                                        Command="{Binding DataContext.MoveTabDownCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                        CommandParameter="{Binding}">
+                                                                    <controls:LucideIcon Icon="arrow-down" Width="14" Height="14" />
+                                                                </Button>
+                                                                <Button Style="{StaticResource IconButtonStyle}" Margin="0,0,4,0" ToolTip="Change Tab Icon"
+                                                                        Command="{Binding DataContext.OpenTabIconPickerCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                        CommandParameter="{Binding}">
+                                                                    <controls:LucideIcon Icon="image" Width="14" Height="14" />
+                                                                </Button>
+                                                                <Button Style="{StaticResource IconButtonStyle}" ToolTip="Delete Tab"
+                                                                        Command="{Binding DataContext.DeleteTabCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                        CommandParameter="{Binding}">
+                                                                    <controls:LucideIcon Icon="trash" Width="14" Height="14" Foreground="{DynamicResource Brush.Danger}" />
+                                                                </Button>
+                                                            </StackPanel>
+                                                        </Grid>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </Border>
+
+                                    <!-- Add Tab Section -->
+                                    <Border Background="{DynamicResource Brush.Background}" BorderBrush="{DynamicResource Brush.Border}"
+                                            BorderThickness="1" CornerRadius="6" Padding="14">
+                                        <StackPanel>
+                                            <TextBlock Text="Add New Tab" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextPrimary}" Margin="0,0,0,10" />
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="8" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                    <ColumnDefinition Width="8" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+                                                <TextBox Grid.Column="0" Text="{Binding AddTabName, UpdateSourceTrigger=PropertyChanged}"
+                                                         FontSize="13" Padding="8,6"
+                                                         Background="{DynamicResource Brush.Surface}" Foreground="{DynamicResource Brush.TextPrimary}"
+                                                         BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1" />
+                                                <!-- Icon Choice Button -->
+                                                <Button Grid.Column="2" Style="{StaticResource BaseButtonStyle}" Padding="10,6"
+                                                        Command="{Binding OpenTabIconPickerCommand}" CommandParameter="addTab"
+                                                        ToolTip="Choose Icon">
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <controls:LucideIcon Icon="{Binding AddTabIcon}" Width="15" Height="15" Foreground="{DynamicResource Brush.Accent}" Margin="0,0,6,0" />
+                                                        <TextBlock Text="Icon" VerticalAlignment="Center" />
+                                                    </StackPanel>
+                                                </Button>
+                                                <!-- Add Button -->
+                                                <Button Grid.Column="4" Content="Add Tab" Style="{StaticResource BaseButtonStyle}"
+                                                        Background="{DynamicResource Brush.Accent}" Foreground="#FFFFFF" BorderThickness="0"
+                                                        Padding="16,6" Command="{Binding AddTabCommand}" />
+                                            </Grid>
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+
+                                <!-- PAGE 3: SECURITY -->
+                                <StackPanel Visibility="{Binding SettingsPageIndex, Converter={StaticResource EqToVis}, ConverterParameter=3}">
+                                    <TextBlock Text="Security Settings" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource Brush.TextPrimary}" Margin="0,0,0,8" />
+                                    <TextBlock Text="Change the administrator password required to unlock Settings and Edit Mode."
+                                               FontSize="12.5" Foreground="{DynamicResource Brush.TextSecondary}" Margin="0,0,0,16" />
+
+                                    <TextBlock Text="New Password:" FontSize="12" Foreground="{DynamicResource Brush.TextSecondary}" Margin="0,0,0,4" />
+                                    <PasswordBox x:Name="SecNewPasswordBox" FontSize="14" Padding="10,8"
+                                                 Background="{DynamicResource Brush.Background}" Foreground="{DynamicResource Brush.TextPrimary}"
+                                                 BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1"
+                                                 PasswordChar="●" Margin="0,0,0,12" />
+
+                                    <TextBlock Text="Confirm New Password:" FontSize="12" Foreground="{DynamicResource Brush.TextSecondary}" Margin="0,0,0,4" />
+                                    <PasswordBox x:Name="SecConfirmPasswordBox" FontSize="14" Padding="10,8"
+                                                 Background="{DynamicResource Brush.Background}" Foreground="{DynamicResource Brush.TextPrimary}"
+                                                 BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1"
+                                                 PasswordChar="●" Margin="0,0,0,16" />
+
+                                    <Button Content="Update Password" Style="{StaticResource BaseButtonStyle}"
+                                            Background="{DynamicResource Brush.Accent}" Foreground="#FFFFFF" BorderThickness="0"
+                                            Padding="16,8" HorizontalAlignment="Left"
+                                            Click="SubmitSecurityPassword_Click" />
+
+                                    <!-- Status / Error Messages -->
+                                    <TextBlock Text="{Binding SecurityError}" Foreground="{DynamicResource Brush.Danger}" FontSize="12" Margin="0,10,0,0"
+                                               Visibility="{Binding SecurityError, Converter={StaticResource BoolToVis}}" />
+                                    <TextBlock Text="{Binding SecuritySuccess}" Foreground="{DynamicResource Brush.Accent}" FontSize="12" FontWeight="SemiBold" Margin="0,10,0,0"
+                                               Visibility="{Binding SecuritySuccess, Converter={StaticResource BoolToVis}}" />
+                                </StackPanel>
+
+                                <!-- PAGE 4: BACKUP -->
+                                <StackPanel Visibility="{Binding SettingsPageIndex, Converter={StaticResource EqToVis}, ConverterParameter=4}">
+                                    <TextBlock Text="Backup &amp; Restore" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource Brush.TextPrimary}" Margin="0,0,0,16" />
+
+                                    <!-- Export Card -->
+                                    <Border Background="{DynamicResource Brush.Background}" BorderBrush="{DynamicResource Brush.Border}"
+                                            BorderThickness="1" CornerRadius="6" Padding="14" Margin="0,0,0,16">
+                                        <StackPanel>
+                                            <TextBlock Text="Export Configuration Backup" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextPrimary}" Margin="0,0,0,6" />
+                                            <TextBlock Text="Creates a complete, portable ZIP file containing config.json, custom logo, wallpaper, and cached high-resolution program icons."
+                                                       FontSize="12" Foreground="{DynamicResource Brush.TextSecondary}" TextWrapping="Wrap" Margin="0,0,0,10" />
+
+                                            <Border Background="{DynamicResource Brush.SurfaceHover}" BorderBrush="{DynamicResource Brush.Border}"
+                                                    BorderThickness="1" CornerRadius="4" Padding="10,8" Margin="0,0,0,12">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <controls:LucideIcon Icon="shield-alert" Width="16" Height="16" Foreground="{DynamicResource Brush.Warning}" Margin="0,0,8,0" />
+                                                    <TextBlock Text="Note: The backup ZIP includes your hashed password." FontSize="11.5" Foreground="{DynamicResource Brush.TextSecondary}" VerticalAlignment="Center" />
+                                                </StackPanel>
+                                            </Border>
+
+                                            <Button Content="Export Backup..." Style="{StaticResource BaseButtonStyle}"
+                                                    Padding="16,8" HorizontalAlignment="Left"
+                                                    Command="{Binding ExportBackupCommand}" />
+                                        </StackPanel>
+                                    </Border>
+
+                                    <!-- Import Card -->
+                                    <Border Background="{DynamicResource Brush.Background}" BorderBrush="{DynamicResource Brush.Border}"
+                                            BorderThickness="1" CornerRadius="6" Padding="14" Margin="0,0,0,16">
+                                        <StackPanel>
+                                            <TextBlock Text="Import Configuration Backup" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextPrimary}" Margin="0,0,0,6" />
+                                            <TextBlock Text="Restores configuration and assets from a ZIP backup. Your current configuration is automatically backed up as config.json.bak before restoring."
+                                                       FontSize="12" Foreground="{DynamicResource Brush.TextSecondary}" TextWrapping="Wrap" Margin="0,0,0,12" />
+
+                                            <Button Content="Import Backup..." Style="{StaticResource BaseButtonStyle}"
+                                                    Padding="16,8" HorizontalAlignment="Left"
+                                                    Command="{Binding ImportBackupCommand}" />
+                                        </StackPanel>
+                                    </Border>
+
+                                    <!-- Backup Results Feedback -->
+                                    <TextBlock Text="{Binding BackupStatusMessage}" Foreground="{DynamicResource Brush.Accent}" FontSize="12.5" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,4,0,0"
+                                               Visibility="{Binding BackupStatusMessage, Converter={StaticResource BoolToVis}}" />
+                                    <TextBlock Text="{Binding BackupErrorMessage}" Foreground="{DynamicResource Brush.Danger}" FontSize="12.5" TextWrapping="Wrap" Margin="0,4,0,0"
+                                               Visibility="{Binding BackupErrorMessage, Converter={StaticResource BoolToVis}}" />
+                                </StackPanel>
+
+                                <!-- PAGE 5: ABOUT -->
+                                <StackPanel Visibility="{Binding SettingsPageIndex, Converter={StaticResource EqToVis}, ConverterParameter=5}">
+                                    <TextBlock Text="About Chromatic Menu" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource Brush.TextPrimary}" Margin="0,0,0,6" />
+                                    <TextBlock Text="A modern, high-performance desktop launcher for internet cafes and kiosk PCs."
+                                               FontSize="12.5" Foreground="{DynamicResource Brush.TextSecondary}" Margin="0,0,0,18" />
+
+                                    <!-- Author & Credits Card -->
+                                    <Border Background="{DynamicResource Brush.Background}" BorderBrush="{DynamicResource Brush.Border}"
+                                            BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,16">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                                <TextBlock Text="Created &amp; Maintained By" FontSize="11" Foreground="{DynamicResource Brush.TextSecondary}" Margin="0,0,0,4" />
+                                                <TextBlock Text="HanazonoArchive" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource Brush.Accent}" />
+                                            </StackPanel>
+                                            <Button Grid.Column="1"
+                                                    Style="{StaticResource BaseButtonStyle}"
+                                                    Command="{Binding OpenGithubCommand}"
+                                                    Background="{DynamicResource Brush.SurfaceHover}"
+                                                    BorderBrush="{DynamicResource Brush.Border}"
+                                                    Padding="12,8"
+                                                    VerticalAlignment="Center"
+                                                    ToolTip="Open GitHub Profile (https://github.com/HanazonoArchive)">
+                                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                    <controls:LucideIcon Icon="github" Width="16" Height="16" Margin="0,0,8,0" Foreground="{DynamicResource Brush.TextPrimary}" />
+                                                    <TextBlock Text="GitHub Profile" FontWeight="SemiBold" FontSize="12.5" VerticalAlignment="Center" />
+                                                </StackPanel>
+                                            </Button>
+                                        </Grid>
+                                    </Border>
+
+                                    <!-- Application Info Card with Generous Consistent Spacing -->
+                                    <Border Background="{DynamicResource Brush.Background}" BorderBrush="{DynamicResource Brush.Border}"
+                                            BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,18">
+                                        <Grid>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto" />
+                                                <RowDefinition Height="12" />
+                                                <RowDefinition Height="Auto" />
+                                                <RowDefinition Height="12" />
+                                                <RowDefinition Height="Auto" />
+                                                <RowDefinition Height="12" />
+                                                <RowDefinition Height="Auto" />
+                                            </Grid.RowDefinitions>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="140" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+
+                                            <!-- Version -->
+                                            <TextBlock Grid.Row="0" Grid.Column="0" Text="Application Version:" FontSize="12" Foreground="{DynamicResource Brush.TextSecondary}" VerticalAlignment="Center" />
+                                            <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding AppVersion, StringFormat='v{0} (Release)'}" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource Brush.TextPrimary}" VerticalAlignment="Center" />
+
+                                            <!-- Target OS -->
+                                            <TextBlock Grid.Row="2" Grid.Column="0" Text="Target Platform:" FontSize="12" Foreground="{DynamicResource Brush.TextSecondary}" VerticalAlignment="Center" />
+                                            <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding TargetOs}" FontSize="12" Foreground="{DynamicResource Brush.TextPrimary}" VerticalAlignment="Center" />
+
+                                            <!-- Config Path -->
+                                            <TextBlock Grid.Row="4" Grid.Column="0" Text="Config Path:" FontSize="12" Foreground="{DynamicResource Brush.TextSecondary}" VerticalAlignment="Center" />
+                                            <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding ConfigPath}" FontSize="11.5" Foreground="{DynamicResource Brush.TextPrimary}" TextWrapping="Wrap" VerticalAlignment="Center" />
+
+                                            <!-- Log Path -->
+                                            <TextBlock Grid.Row="6" Grid.Column="0" Text="Log Path:" FontSize="12" Foreground="{DynamicResource Brush.TextSecondary}" VerticalAlignment="Center" />
+                                            <TextBlock Grid.Row="6" Grid.Column="1" Text="{Binding LogPath}" FontSize="11.5" Foreground="{DynamicResource Brush.TextPrimary}" TextWrapping="Wrap" VerticalAlignment="Center" />
+                                        </Grid>
+                                    </Border>
+
+                                    <StackPanel Orientation="Horizontal">
+                                        <Button Content="Open Config Folder" Style="{StaticResource BaseButtonStyle}"
+                                                Padding="14,8" Margin="0,0,12,0" Command="{Binding OpenConfigFolderCommand}" />
+                                        <Button Content="Open Log Folder" Style="{StaticResource BaseButtonStyle}"
+                                                Padding="14,8" Command="{Binding OpenLogFolderCommand}" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </Grid>
+                        </ScrollViewer>
+                    </Grid>
+
+                    <!-- Footer -->
+                    <Border Grid.Row="3" BorderBrush="{DynamicResource Brush.Border}" BorderThickness="0,1,0,0" Padding="24,12">
+                        <Button Content="Close" Style="{StaticResource BaseButtonStyle}"
+                                HorizontalAlignment="Right" Padding="20,7"
+                                Command="{Binding CloseModalCommand}" />
+                    </Border>
+                </Grid>
+            </Border>
+
+            <!-- B. TAB DELETE PROMPT DIALOG -->
+            <Border Background="{DynamicResource Brush.Surface}"
+                    BorderBrush="{DynamicResource Brush.Border}"
+                    BorderThickness="1"
+                    CornerRadius="{DynamicResource Radius.Modal}"
+                    Width="480"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Padding="24"
+                    Visibility="{Binding IsTabDeletePromptVisible, Converter={StaticResource BoolToVis}}">
+                <StackPanel>
+                    <TextBlock Text="Delete Tab" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource Brush.TextPrimary}" Margin="0,0,0,12" />
+                    <TextBlock Text="{Binding PendingDeleteTabItemCount, StringFormat='This tab contains {0} program(s).'}"
+                               FontSize="13.5" FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextPrimary}" Margin="0,0,0,8" />
+                    <TextBlock Text="What would you like to do with the programs in this tab?"
+                               FontSize="12.5" Foreground="{DynamicResource Brush.TextSecondary}" Margin="0,0,0,16" />
+
+                    <!-- Move to target dropdown -->
+                    <TextBlock Text="Move programs to another tab:" FontSize="12" Foreground="{DynamicResource Brush.TextSecondary}" Margin="0,0,0,4" />
+                    <ComboBox ItemsSource="{Binding AvailableMoveTargetTabs}"
+                              SelectedItem="{Binding SelectedMoveTargetTab}"
+                              DisplayMemberPath="Name"
+                              FontSize="13" Padding="8,6" Margin="0,0,0,20" />
+
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Content="Move &amp; Delete Tab" Style="{StaticResource BaseButtonStyle}"
+                                Background="{DynamicResource Brush.Accent}" Foreground="#FFFFFF" BorderThickness="0"
+                                Padding="14,8" Margin="0,0,8,0"
+                                Command="{Binding SubmitDeleteTabMoveCommand}" />
+                        <Button Content="Delete All Programs" Style="{StaticResource BaseButtonStyle}"
+                                Background="{DynamicResource Brush.Danger}" Foreground="#FFFFFF" BorderThickness="0"
+                                Padding="14,8" Margin="0,0,8,0"
+                                Command="{Binding SubmitDeleteTabAllCommand}" />
+                        <Button Content="Cancel" Style="{StaticResource BaseButtonStyle}"
+                                Padding="14,8" Command="{Binding CloseModalCommand}" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- C. TAB ICON PICKER DIALOG -->
+            <Border Background="{DynamicResource Brush.Surface}"
+                    BorderBrush="{DynamicResource Brush.Border}"
+                    BorderThickness="1"
+                    CornerRadius="{DynamicResource Radius.Modal}"
+                    Width="500" Height="420"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Padding="20"
+                    Visibility="{Binding IsIconPickerVisible, Converter={StaticResource BoolToVis}}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <Grid Grid.Row="0" Margin="0,0,0,12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Choose Tab Icon" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource Brush.TextPrimary}" />
+                        <Button Grid.Column="1" Style="{StaticResource IconButtonStyle}" Command="{Binding CloseModalCommand}">
+                            <controls:LucideIcon Icon="x" Width="16" Height="16" />
+                        </Button>
+                    </Grid>
+
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                        <ItemsControl ItemsSource="{Binding AvailableTabIcons}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel ItemWidth="52" ItemHeight="52" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Button Style="{StaticResource BaseButtonStyle}"
+                                            Padding="0" Margin="3"
+                                            Command="{Binding DataContext.SelectTabIconCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                            CommandParameter="{Binding}"
+                                            ToolTip="{Binding}">
+                                        <controls:LucideIcon Icon="{Binding}" Width="22" Height="22"
+                                                            Foreground="{DynamicResource Brush.Accent}" />
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+
+                    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+                        <Button Content="Cancel" Style="{StaticResource BaseButtonStyle}" Padding="16,8" Command="{Binding CloseModalCommand}" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- D. COMPACT MODAL CONTAINER (Password, ChangePassword, AddWebsite, EditDetails, ConfirmDelete, Message) -->
+            <Border Background="{DynamicResource Brush.Surface}"
+                    BorderBrush="{DynamicResource Brush.Border}"
+                    BorderThickness="1"
+                    CornerRadius="{DynamicResource Radius.Modal}"
+                    Width="460"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Padding="24"
+                    Visibility="{Binding IsCompactDialogVisible, Converter={StaticResource BoolToVis}}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <!-- Header: Title & Close -->
+                        <RowDefinition Height="Auto" />
+                        <!-- Deep Freeze Banner -->
+                        <RowDefinition Height="Auto" />
+                        <!-- Content -->
+                        <RowDefinition Height="Auto" />
+                        <!-- Actions -->
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <!-- Title & Close Button -->
+                    <Grid Grid.Row="0" Margin="0,0,0,16">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="{Binding ModalTitle}"
+                                   FontSize="16"
+                                   FontWeight="Bold"
+                                   Foreground="{DynamicResource Brush.TextPrimary}"
+                                   VerticalAlignment="Center" />
+                        <Button Grid.Column="1"
+                                Style="{StaticResource IconButtonStyle}"
+                                Command="{Binding CloseModalCommand}"
+                                ToolTip="Close (Esc)"
+                                Visibility="{Binding MustChangePassword, Converter={StaticResource InverseBoolToVis}}">
+                            <controls:LucideIcon Icon="x" Width="16" Height="16" />
+                        </Button>
+                    </Grid>
+
+                    <!-- Non-blocking Deep Freeze Banner per SPEC section 8 -->
+                    <Border Grid.Row="1"
+                            Background="{DynamicResource Brush.SurfaceHover}"
+                            BorderBrush="{DynamicResource Brush.Border}"
+                            BorderThickness="1"
+                            CornerRadius="{DynamicResource Radius.Sm}"
+                            Padding="10,8"
+                            Margin="0,0,0,16"
+                            Visibility="{Binding IsDeepFreezeInstalled, Converter={StaticResource BoolToVis}}">
+                        <StackPanel Orientation="Horizontal">
+                            <controls:LucideIcon Icon="shield-alert" Width="16" Height="16"
+                                                Foreground="{DynamicResource Brush.Warning}"
+                                                Margin="0,0,8,0" />
+                            <TextBlock Text="Changes made while Deep Freeze is active are lost on restart."
+                                       Foreground="{DynamicResource Brush.TextSecondary}"
+                                       FontSize="11.5"
+                                       TextWrapping="Wrap"
+                                       VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Content 1: Password Dialog -->
+                    <StackPanel Grid.Row="2" Visibility="{Binding IsPasswordDialogVisible, Converter={StaticResource BoolToVis}}" Margin="0,0,0,20">
+                        <TextBlock Text="Enter administrator password to continue:"
+                                   Foreground="{DynamicResource Brush.TextSecondary}"
+                                   FontSize="13"
+                                   Margin="0,0,0,10" />
+                        <PasswordBox x:Name="ModalPasswordBox"
+                                     FontSize="14"
+                                     Padding="10,8"
+                                     Background="{DynamicResource Brush.Background}"
+                                     Foreground="{DynamicResource Brush.TextPrimary}"
+                                     BorderBrush="{DynamicResource Brush.Border}"
+                                     BorderThickness="1"
+                                     PasswordChar="●" />
+                        <TextBlock Text="{Binding PasswordError}"
+                                   Foreground="{DynamicResource Brush.Danger}"
+                                   FontSize="12"
+                                   Margin="0,6,0,0"
+                                   Visibility="{Binding PasswordError, Converter={StaticResource BoolToVis}}" />
+                    </StackPanel>
+
+                    <!-- Content 2: Change Password Dialog (Forced on first unlock) -->
+                    <StackPanel Grid.Row="2" Visibility="{Binding IsChangePasswordDialogVisible, Converter={StaticResource BoolToVis}}" Margin="0,0,0,20">
+                        <TextBlock Text="For security, you must set a new administrator password before continuing."
+                                   Foreground="{DynamicResource Brush.TextSecondary}"
+                                   FontSize="12.5"
+                                   TextWrapping="Wrap"
+                                   Margin="0,0,0,12" />
+
+                        <TextBlock Text="New Password:" Foreground="{DynamicResource Brush.TextSecondary}" FontSize="12" Margin="0,0,0,4" />
+                        <PasswordBox x:Name="NewPasswordBox"
+                                     FontSize="14"
+                                     Padding="10,8"
+                                     Background="{DynamicResource Brush.Background}"
+                                     Foreground="{DynamicResource Brush.TextPrimary}"
+                                     BorderBrush="{DynamicResource Brush.Border}"
+                                     BorderThickness="1"
+                                     PasswordChar="●"
+                                     Margin="0,0,0,10" />
+
+                        <TextBlock Text="Confirm New Password:" Foreground="{DynamicResource Brush.TextSecondary}" FontSize="12" Margin="0,0,0,4" />
+                        <PasswordBox x:Name="ConfirmPasswordBox"
+                                     FontSize="14"
+                                     Padding="10,8"
+                                     Background="{DynamicResource Brush.Background}"
+                                     Foreground="{DynamicResource Brush.TextPrimary}"
+                                     BorderBrush="{DynamicResource Brush.Border}"
+                                     BorderThickness="1"
+                                     PasswordChar="●"
+                                     Margin="0,0,0,4" />
+
+                        <TextBlock Text="{Binding NewPasswordError}"
+                                   Foreground="{DynamicResource Brush.Danger}"
+                                   FontSize="12"
+                                   Margin="0,6,0,0"
+                                   Visibility="{Binding NewPasswordError, Converter={StaticResource BoolToVis}}" />
+                    </StackPanel>
+
+                    <!-- Content 4: Informational / Message Dialog -->
+                    <StackPanel Grid.Row="2" Visibility="{Binding IsMessageDialogVisible, Converter={StaticResource BoolToVis}}" Margin="0,0,0,20">
+                        <TextBlock Text="{Binding ModalMessage}"
+                                   Foreground="{DynamicResource Brush.TextPrimary}"
+                                   FontSize="13"
+                                   TextWrapping="Wrap" />
+                    </StackPanel>
+
+                    <!-- Content 5: Add Website Dialog -->
+                    <StackPanel Grid.Row="2" Visibility="{Binding IsAddWebsiteDialogVisible, Converter={StaticResource BoolToVis}}" Margin="0,0,0,20">
+                        <TextBlock Text="Website Name:" Foreground="{DynamicResource Brush.TextSecondary}" FontSize="12" Margin="0,0,0,4" />
+                        <TextBox Text="{Binding WebsiteName, UpdateSourceTrigger=PropertyChanged}"
+                                 FontSize="13" Padding="8,6" Background="{DynamicResource Brush.Background}"
+                                 Foreground="{DynamicResource Brush.TextPrimary}" BorderBrush="{DynamicResource Brush.Border}"
+                                 BorderThickness="1" Margin="0,0,0,12" />
+
+                        <TextBlock Text="URL (http:// or https://):" Foreground="{DynamicResource Brush.TextSecondary}" FontSize="12" Margin="0,0,0,4" />
+                        <TextBox Text="{Binding WebsiteUrl, UpdateSourceTrigger=PropertyChanged}"
+                                 FontSize="13" Padding="8,6" Background="{DynamicResource Brush.Background}"
+                                 Foreground="{DynamicResource Brush.TextPrimary}" BorderBrush="{DynamicResource Brush.Border}"
+                                 BorderThickness="1" Margin="0,0,0,4" />
+
+                        <TextBlock Text="{Binding WebsiteError}"
+                                   Foreground="{DynamicResource Brush.Danger}" FontSize="12" Margin="0,4,0,0"
+                                   Visibility="{Binding WebsiteError, Converter={StaticResource BoolToVis}}" />
+                    </StackPanel>
+
+                    <!-- Content 6: Edit Details Dialog -->
+                    <StackPanel Grid.Row="2" Visibility="{Binding IsEditDetailsDialogVisible, Converter={StaticResource BoolToVis}}" Margin="0,0,0,20">
+                        <TextBlock Text="Name:" Foreground="{DynamicResource Brush.TextSecondary}" FontSize="12" Margin="0,0,0,4" />
+                        <TextBox Text="{Binding EditItemName, UpdateSourceTrigger=PropertyChanged}"
+                                 FontSize="13" Padding="8,6" Background="{DynamicResource Brush.Background}"
+                                 Foreground="{DynamicResource Brush.TextPrimary}" BorderBrush="{DynamicResource Brush.Border}"
+                                 BorderThickness="1" Margin="0,0,0,10" />
+
+                        <TextBlock Text="Target Path or URL:" Foreground="{DynamicResource Brush.TextSecondary}" FontSize="12" Margin="0,0,0,4" />
+                        <Grid Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="8" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBox Text="{Binding EditItemTarget, UpdateSourceTrigger=PropertyChanged}"
+                                     FontSize="13" Padding="8,6" Background="{DynamicResource Brush.Background}"
+                                     Foreground="{DynamicResource Brush.TextPrimary}" BorderBrush="{DynamicResource Brush.Border}"
+                                     BorderThickness="1" />
+                            <Button Grid.Column="2" Content="Browse..." Style="{StaticResource BaseButtonStyle}"
+                                    Padding="10,6" Command="{Binding BrowseTargetCommand}" />
+                        </Grid>
+
+                        <TextBlock Text="Arguments:" Foreground="{DynamicResource Brush.TextSecondary}" FontSize="12" Margin="0,0,0,4" />
+                        <TextBox Text="{Binding EditItemArgs, UpdateSourceTrigger=PropertyChanged}"
+                                 FontSize="13" Padding="8,6" Background="{DynamicResource Brush.Background}"
+                                 Foreground="{DynamicResource Brush.TextPrimary}" BorderBrush="{DynamicResource Brush.Border}"
+                                 BorderThickness="1" Margin="0,0,0,10" />
+
+                        <TextBlock Text="Working Directory:" Foreground="{DynamicResource Brush.TextSecondary}" FontSize="12" Margin="0,0,0,4" />
+                        <Grid Margin="0,0,0,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="8" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBox Text="{Binding EditItemWorkDir, UpdateSourceTrigger=PropertyChanged}"
+                                     FontSize="13" Padding="8,6" Background="{DynamicResource Brush.Background}"
+                                     Foreground="{DynamicResource Brush.TextPrimary}" BorderBrush="{DynamicResource Brush.Border}"
+                                     BorderThickness="1" />
+                            <Button Grid.Column="2" Content="Browse..." Style="{StaticResource BaseButtonStyle}"
+                                    Padding="10,6" Command="{Binding BrowseWorkDirCommand}" />
+                        </Grid>
+
+                        <TextBlock Text="{Binding EditDetailsError}"
+                                   Foreground="{DynamicResource Brush.Danger}" FontSize="12" Margin="0,4,0,0"
+                                   Visibility="{Binding EditDetailsError, Converter={StaticResource BoolToVis}}" />
+                    </StackPanel>
+
+                    <!-- Content 7: Confirm Delete Dialog -->
+                    <StackPanel Grid.Row="2" Visibility="{Binding IsConfirmDeleteDialogVisible, Converter={StaticResource BoolToVis}}" Margin="0,0,0,20">
+                        <TextBlock Text="{Binding ConfirmDeleteMessage}"
+                                   Foreground="{DynamicResource Brush.TextPrimary}"
+                                   FontWeight="SemiBold"
+                                   FontSize="13.5"
+                                   TextWrapping="Wrap"
+                                   Margin="0,0,0,8" />
+                        <TextBlock Text="Target files on disk will not be deleted — only the launcher shortcut and cached icon will be removed."
+                                   Foreground="{DynamicResource Brush.TextSecondary}"
+                                   FontSize="12"
+                                   TextWrapping="Wrap" />
+                    </StackPanel>
+
+                    <!-- Actions Row -->
+                    <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right">
+                        <!-- Password Submit Button -->
+                        <Button Content="Unlock"
+                                Style="{StaticResource BaseButtonStyle}"
+                                Background="{DynamicResource Brush.Accent}"
+                                Foreground="#FFFFFF"
+                                BorderThickness="0"
+                                Padding="16,8"
+                                Margin="0,0,8,0"
+                                Click="SubmitPassword_Click"
+                                Visibility="{Binding IsPasswordDialogVisible, Converter={StaticResource BoolToVis}}" />
+
+                        <!-- Change Password Submit Button -->
+                        <Button Content="Save Password"
+                                Style="{StaticResource BaseButtonStyle}"
+                                Background="{DynamicResource Brush.Accent}"
+                                Foreground="#FFFFFF"
+                                BorderThickness="0"
+                                Padding="16,8"
+                                Margin="0,0,8,0"
+                                Click="SubmitNewPassword_Click"
+                                Visibility="{Binding IsChangePasswordDialogVisible, Converter={StaticResource BoolToVis}}" />
+
+                        <!-- Add Website Submit Button -->
+                        <Button Content="Add Website"
+                                Style="{StaticResource BaseButtonStyle}"
+                                Background="{DynamicResource Brush.Accent}"
+                                Foreground="#FFFFFF"
+                                BorderThickness="0"
+                                Padding="16,8"
+                                Margin="0,0,8,0"
+                                Command="{Binding SubmitAddWebsiteCommand}"
+                                Visibility="{Binding IsAddWebsiteDialogVisible, Converter={StaticResource BoolToVis}}" />
+
+                        <!-- Edit Details Save Button -->
+                        <Button Content="Save"
+                                Style="{StaticResource BaseButtonStyle}"
+                                Background="{DynamicResource Brush.Accent}"
+                                Foreground="#FFFFFF"
+                                BorderThickness="0"
+                                Padding="16,8"
+                                Margin="0,0,8,0"
+                                Command="{Binding SubmitEditDetailsCommand}"
+                                Visibility="{Binding IsEditDetailsDialogVisible, Converter={StaticResource BoolToVis}}" />
+
+                        <!-- Confirm Delete Button -->
+                        <Button Content="Remove"
+                                Style="{StaticResource BaseButtonStyle}"
+                                Background="{DynamicResource Brush.Danger}"
+                                Foreground="#FFFFFF"
+                                BorderThickness="0"
+                                Padding="16,8"
+                                Margin="0,0,8,0"
+                                Command="{Binding SubmitConfirmDeleteCommand}"
+                                Visibility="{Binding IsConfirmDeleteDialogVisible, Converter={StaticResource BoolToVis}}" />
+
+                        <!-- Cancel Button (for password dialogs) -->
+                        <Button Content="Cancel"
+                                Style="{StaticResource BaseButtonStyle}"
+                                Padding="14,8"
+                                Command="{Binding CloseModalCommand}"
+                                Visibility="{Binding IsPasswordDialogVisible, Converter={StaticResource BoolToVis}}" />
+
+                        <!-- Cancel Button for Add Website -->
+                        <Button Content="Cancel"
+                                Style="{StaticResource BaseButtonStyle}"
+                                Padding="14,8"
+                                Command="{Binding CloseModalCommand}"
+                                Visibility="{Binding IsAddWebsiteDialogVisible, Converter={StaticResource BoolToVis}}" />
+
+                        <!-- Cancel Button for Edit Details -->
+                        <Button Content="Cancel"
+                                Style="{StaticResource BaseButtonStyle}"
+                                Padding="14,8"
+                                Command="{Binding CloseModalCommand}"
+                                Visibility="{Binding IsEditDetailsDialogVisible, Converter={StaticResource BoolToVis}}" />
+
+                        <!-- Cancel Button for Confirm Delete -->
+                        <Button Content="Cancel"
+                                Style="{StaticResource BaseButtonStyle}"
+                                Padding="14,8"
+                                Command="{Binding CloseModalCommand}"
+                                Visibility="{Binding IsConfirmDeleteDialogVisible, Converter={StaticResource BoolToVis}}" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Grid>
+    </Grid>
+</Window>
