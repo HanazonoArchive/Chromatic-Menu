@@ -273,3 +273,5 @@ Parameter name: key
 [2026-09-21 06:56:48.013] [INFO] Configuration saved successfully (0 items, 5 tabs).
 [2026-09-21 06:57:17.152] [INFO] Configuration saved successfully (0 items, 5 tabs).
 [2026-09-21 06:57:17.176] [INFO] Chromatic Menu exiting.
+[2026-09-21 07:05:27.261] [INFO] Chromatic Menu starting up.
+[2026-09-21 07:05:27.690] [INFO] SystemInfo: Computer=DESKTOP-ECRC5MH, CPU=Ryzen 5 3600  3.6 GHz, OS=Windows 10 Pro  Build 19045, CT=6 Cores / 12 Threads, RAM=7.88 GB / 16.00 GB, Net=Ethernet (UP 0 Kbps   DOWN 0 Kbps), Disks=[C: SSD  95.81 GB / 110.63 GB; D: HDD  183.71 GB / 465.76 GB; E: NVMe  123.64 GB / 238.46 GB; F: SSD  57.17 GB / 119.23 GB], GPUs=[Radeon RX550/550 Series (Dedicated) 4.00 GB]

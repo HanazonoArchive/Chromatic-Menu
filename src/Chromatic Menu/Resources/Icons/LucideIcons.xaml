@@ -60,4 +60,6 @@
     <StreamGeometry x:Key="Icon.zap">M 15.914 4 a 1.5 1.5 0 00 -2.474 -1.561 l -9 9 A 1.5 1.5 0 005.5 14 h 4.002 a .5 .5 0 01.471 .666 L 8.086 20 a 1.5 1.5 0 002.475 1.56 l 9 -9 A 1.5 1.5 0 0018.5 10 h -3.997 a .5 .5 0 01 -.472 -.667 z</StreamGeometry>
     <StreamGeometry x:Key="Icon.sliders">M 10 5 H 3 M 12 19 H 3 M 14 3 v 4 M 16 17 v 4 M 21 12 h -9 M 21 19 h -5 M 21 5 h -7 M 8 10 v 4 M 8 12 H 3</StreamGeometry>
     <StreamGeometry x:Key="Icon.github">M 15 22 v -4 a 4.8 4.8 0 0 0 -1 -3.5 c 3 0 6 -2 6 -5.5 .08 -1.25 -.27 -2.48 -1 -3.5 .28 -1.15 .28 -2.35 0 -3.5 0 0 -1 0 -3 1.5 -2.64 -.5 -5.36 -.5 -8 0 C 6 2 5 2 5 2 c -.3 1.15 -.3 2.35 0 3.5 A 5.403 5.403 0 0 0 4 9 c 0 3.5 3 5.5 6 5.5 -.39 .49 -.68 1.05 -.85 1.65 -.17 .6 -.22 1.23 -.15 1.85 v 4 M 9 18 c -4.51 2 -5 -2 -7 -2</StreamGeometry>
+    <StreamGeometry x:Key="Icon.refresh-cw">M 21 12 a 9 9 0 0 0 -9 -9 9.75 9.75 0 0 0 -6.74 2.74 L 3 8 M 3 3 v 5 h 5 M 3 12 a 9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74 -2.74 L 21 16 M 16 21 h 5 v -5</StreamGeometry>
+    <StreamGeometry x:Key="Icon.alert-triangle">M 10.29 3.86 L 1.82 18 a 2 2 0 0 0 1.71 3 h 16.94 a 2 2 0 0 0 1.71 -3 L 13.71 3.86 a 2 2 0 0 0 -3.42 0 z M 12 9 v 4 M 12 17 h .01</StreamGeometry>
 </ResourceDictionary>

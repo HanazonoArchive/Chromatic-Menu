@@ -1,0 +1,110 @@
+<?ifndef Version?>
+<?define Version = "1.0.0" ?>
+<?endif?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui"
+     xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util">
+  <Package Name="Chromatic Menu" 
+           Manufacturer="HanazonoArchive" 
+           Version="$(var.Version)" 
+           UpgradeCode="5B0A2E55-27B9-4DF5-B9F2-4740D2CF3A19" 
+           Scope="perMachine">
+    
+    <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." AllowSameVersionUpgrades="yes" />
+    <MediaTemplate EmbedCab="yes" />
+
+    <Icon Id="AppIcon.ico" SourceFile="src\Chromatic Menu\Resources\app.ico" />
+    <Property Id="ARPPRODUCTICON" Value="AppIcon.ico" />
+    <Property Id="ARPHELPLINK" Value="https://github.com/HanazonoArchive" />
+
+    <!-- Default to Program Files (x86) per user requirement -->
+    <StandardDirectory Id="ProgramFilesFolder">
+      <Directory Id="INSTALLFOLDER" Name="Chromatic Menu">
+        <Directory Id="DATAFOLDER" Name="data">
+          <Directory Id="ASSETSFOLDER" Name="assets" />
+          <Directory Id="LOGSFOLDER" Name="logs" />
+        </Directory>
+      </Directory>
+    </StandardDirectory>
+
+    <Property Id="INSTALLFOLDER">
+      <RegistrySearch Id="SearchInstallFolder" Root="HKLM" Key="Software\HanazonoArchive\ChromaticMenu" Name="InstallDir" Type="raw" />
+    </Property>
+
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="ApplicationProgramsFolder" Name="Chromatic Menu" />
+    </StandardDirectory>
+
+    <StandardDirectory Id="DesktopFolder" />
+
+    <ComponentGroup Id="ProductComponents" Directory="INSTALLFOLDER">
+      <Component Id="MainExecutable" Guid="C19B4C49-E8BE-436D-844C-71576BF4C9B3">
+        <File Id="ChromaticMenuExe" Source="src\Chromatic Menu\bin\Release\net48\Chromatic Menu.exe" KeyPath="yes" />
+        <File Id="ChromaticMenuConfig" Source="src\Chromatic Menu\bin\Release\net48\Chromatic Menu.exe.config" />
+      </Component>
+
+      <Component Id="UninstallExecutable" Guid="E6B4A38C-91D2-4C33-8F72-12A5C9B38D10">
+        <File Id="UninstallExe" Source="bin\Release\Uninstall.exe" KeyPath="yes" />
+      </Component>
+
+      <Component Id="AppShortcuts" Guid="A7F41982-2C1E-4FE5-8D63-1E9D7C22E581">
+        <Shortcut Id="AppStartMenuShortcut" 
+                  Directory="ApplicationProgramsFolder" 
+                  Name="Chromatic Menu" 
+                  Description="Chromatic Menu Desktop Launcher"
+                  Target="[INSTALLFOLDER]Chromatic Menu.exe" 
+                  WorkingDirectory="INSTALLFOLDER" 
+                  Icon="AppIcon.ico" />
+        <Shortcut Id="UninstallStartMenuShortcut" 
+                  Directory="ApplicationProgramsFolder" 
+                  Name="Uninstall Chromatic Menu" 
+                  Description="Uninstall Chromatic Menu from this PC"
+                  Target="[INSTALLFOLDER]Uninstall.exe" 
+                  WorkingDirectory="INSTALLFOLDER" 
+                  Icon="AppIcon.ico" />
+        <Shortcut Id="AppDesktopShortcut" 
+                  Directory="DesktopFolder" 
+                  Name="Chromatic Menu" 
+                  Description="Chromatic Menu Desktop Launcher"
+                  Target="[INSTALLFOLDER]Chromatic Menu.exe" 
+                  WorkingDirectory="INSTALLFOLDER" 
+                  Icon="AppIcon.ico" />
+        <RemoveFolder Id="CleanUpProgramMenuFolder" Directory="ApplicationProgramsFolder" On="uninstall" />
+        <RegistryValue Root="HKCU" Key="Software\HanazonoArchive\ChromaticMenu" Name="Installed" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+
+      <Component Id="ProductRegistration" Guid="F9D7C23E-581A-4FE5-8D63-A7F419822C1E">
+        <RegistryValue Root="HKLM" Key="Software\HanazonoArchive\ChromaticMenu" Name="ProductCode" Type="string" Value="[ProductCode]" KeyPath="yes" />
+        <RegistryValue Root="HKLM" Key="Software\HanazonoArchive\ChromaticMenu" Name="InstallDir" Type="string" Value="[INSTALLFOLDER]" />
+      </Component>
+
+      <Component Id="DataFoldersComponent" Guid="D2A8E19B-4712-4C10-9154-A6A4E6C71D22">
+        <CreateFolder Directory="DATAFOLDER" />
+        <CreateFolder Directory="ASSETSFOLDER" />
+        <CreateFolder Directory="LOGSFOLDER" />
+      </Component>
+
+      <!-- Complete Folder & Runtime Files Removal On Uninstall -->
+      <Component Id="FolderCleanupComponent" Guid="874219AC-2E5F-4A9B-9831-C9D812345678">
+        <RegistryValue Root="HKLM" Key="Software\HanazonoArchive\ChromaticMenu" Name="FolderCleanup" Type="integer" Value="1" KeyPath="yes" />
+        <util:RemoveFolderEx Property="INSTALLFOLDER" On="uninstall" />
+        <RemoveFile Id="PurgeLogsFiles" On="uninstall" Name="*.*" Directory="LOGSFOLDER" />
+        <RemoveFolder Id="PurgeLogsFolder" On="uninstall" Directory="LOGSFOLDER" />
+        <RemoveFile Id="PurgeAssetsFiles" On="uninstall" Name="*.*" Directory="ASSETSFOLDER" />
+        <RemoveFolder Id="PurgeAssetsFolder" On="uninstall" Directory="ASSETSFOLDER" />
+        <RemoveFile Id="PurgeDataFiles" On="uninstall" Name="*.*" Directory="DATAFOLDER" />
+        <RemoveFolder Id="PurgeDataFolder" On="uninstall" Directory="DATAFOLDER" />
+        <RemoveFile Id="PurgeInstallFiles" On="uninstall" Name="*.*" Directory="INSTALLFOLDER" />
+        <RemoveFolder Id="PurgeInstallFolder" On="uninstall" Directory="INSTALLFOLDER" />
+      </Component>
+    </ComponentGroup>
+
+    <Feature Id="MainFeature" Title="Chromatic Menu Application" Level="1">
+      <ComponentGroupRef Id="ProductComponents" />
+    </Feature>
+
+    <!-- User-Friendly Interactive Setup Wizard -->
+    <ui:WixUI Id="WixUI_InstallDir" InstallDirectory="INSTALLFOLDER" />
+    <WixVariable Id="WixUILicenseRtf" Value="installer\license.rtf" />
+  </Package>
+</Wix>

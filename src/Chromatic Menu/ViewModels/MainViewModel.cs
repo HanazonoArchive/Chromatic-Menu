@@ -7,6 +7,7 @@ using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Threading.Tasks;
 using ChromaticMenu.Models;
 using ChromaticMenu.Services;
 
@@ -22,6 +23,8 @@ namespace ChromaticMenu.ViewModels
         private readonly StartupService _startupService;
         private readonly FontService _fontService;
         private readonly ExportImportService _exportImportService;
+        private readonly DeepFreezeService _deepFreezeService;
+        private readonly UpdateService _updateService;
 
         private string _shopName = "PisoNet";
         private string _shopLogoPath;
@@ -344,10 +347,94 @@ namespace ChromaticMenu.ViewModels
         }
 
         // About Properties
-        public string AppVersion => "1.0.0";
+        public string AppVersion
+        {
+            get
+            {
+                var ver = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
+                return ver != null ? $"{ver.Major}.{ver.Minor}.{ver.Build}" : "1.0.0";
+            }
+        }
         public string TargetOs => "Windows 10 / Windows 11 (All Editions)";
         public string ConfigPath => _configService.ConfigPath;
         public string LogPath => Path.Combine(_configService.DataDirectory, "logs", "launcher.log");
+
+        // Update & Deep Freeze State
+        private bool _isCheckingForUpdates;
+        private bool _isDownloadingUpdate;
+        private bool _isUpdateAvailable;
+        private bool _isUpdateBlockedByDeepFreeze;
+        private string _updateStatusMessage = "Ready to check for updates.";
+        private string _latestVersionTag = string.Empty;
+        private string _latestDownloadUrl = string.Empty;
+        private int _updateProgressPercent;
+
+        public bool IsCheckingForUpdates
+        {
+            get => _isCheckingForUpdates;
+            set => SetProperty(ref _isCheckingForUpdates, value);
+        }
+
+        public bool IsDownloadingUpdate
+        {
+            get => _isDownloadingUpdate;
+            set
+            {
+                if (SetProperty(ref _isDownloadingUpdate, value))
+                {
+                    OnPropertyChanged(nameof(CanInstallUpdate));
+                }
+            }
+        }
+
+        public bool IsUpdateAvailable
+        {
+            get => _isUpdateAvailable;
+            set
+            {
+                if (SetProperty(ref _isUpdateAvailable, value))
+                {
+                    OnPropertyChanged(nameof(CanInstallUpdate));
+                }
+            }
+        }
+
+        public bool IsUpdateBlockedByDeepFreeze
+        {
+            get => _isUpdateBlockedByDeepFreeze;
+            set
+            {
+                if (SetProperty(ref _isUpdateBlockedByDeepFreeze, value))
+                {
+                    OnPropertyChanged(nameof(CanInstallUpdate));
+                }
+            }
+        }
+
+        public string UpdateStatusMessage
+        {
+            get => _updateStatusMessage;
+            set => SetProperty(ref _updateStatusMessage, value);
+        }
+
+        public string LatestVersionTag
+        {
+            get => _latestVersionTag;
+            set => SetProperty(ref _latestVersionTag, value);
+        }
+
+        public int UpdateProgressPercent
+        {
+            get => _updateProgressPercent;
+            set => SetProperty(ref _updateProgressPercent, value);
+        }
+
+        public string DeepFreezeStatusText => _deepFreezeService.StatusDisplayName;
+        public DeepFreezeState DeepFreezeState => _deepFreezeService.GetDeepFreezeState();
+        public bool IsDeepFreezeFrozen => _deepFreezeService.GetDeepFreezeState() == DeepFreezeState.Frozen;
+        public bool IsDeepFreezeThawed => _deepFreezeService.GetDeepFreezeState() == DeepFreezeState.Thawed;
+        public bool CanSafelyUpdate => _deepFreezeService.CanSafelyUpdate;
+        public bool CanInstallUpdate => _isUpdateAvailable && !_isUpdateBlockedByDeepFreeze && !_isDownloadingUpdate;
 
         public string SearchQuery
         {
@@ -658,6 +745,8 @@ namespace ChromaticMenu.ViewModels
         public RelayCommand ImportBackupCommand { get; }
         public RelayCommand OpenConfigFolderCommand { get; }
         public RelayCommand OpenLogFolderCommand { get; }
+        public RelayCommand CheckForUpdatesCommand { get; }
+        public RelayCommand ApplyUpdateCommand { get; }
 
         public Action OnFocusPasswordInput { get; set; }
         public Action OnFocusNewPasswordInput { get; set; }
@@ -673,8 +762,13 @@ namespace ChromaticMenu.ViewModels
             _startupService = StartupService.Instance;
             _fontService = FontService.Instance;
             _exportImportService = ExportImportService.Instance;
+            _deepFreezeService = DeepFreezeService.Instance;
+            _updateService = UpdateService.Instance;
 
-            _isDeepFreezeInstalled = DeepFreezeService.Instance.IsDeepFreezeInstalled();
+            _isDeepFreezeInstalled = _deepFreezeService.IsDeepFreezeInstalled();
+
+            CheckForUpdatesCommand = new RelayCommand(async () => await CheckForUpdatesAsync());
+            ApplyUpdateCommand = new RelayCommand(async () => await ApplyUpdateAsync());
 
             ToggleSessionLockCommand = new RelayCommand(() =>
             {
@@ -2228,6 +2322,78 @@ namespace ChromaticMenu.ViewModels
             catch (Exception ex)
             {
                 ShowMessage($"Failed to open folder: {ex.Message}");
+            }
+        }
+
+        public async Task CheckForUpdatesAsync()
+        {
+            if (IsCheckingForUpdates || IsDownloadingUpdate) return;
+
+            IsCheckingForUpdates = true;
+            UpdateStatusMessage = "Checking for latest release...";
+            OnPropertyChanged(nameof(DeepFreezeStatusText));
+            OnPropertyChanged(nameof(IsDeepFreezeFrozen));
+            OnPropertyChanged(nameof(IsDeepFreezeThawed));
+            OnPropertyChanged(nameof(CanSafelyUpdate));
+
+            try
+            {
+                var result = await _updateService.CheckForUpdatesAsync(AppVersion);
+                IsUpdateAvailable = result.HasUpdate;
+                LatestVersionTag = result.LatestVersion;
+                _latestDownloadUrl = result.DownloadUrl;
+                IsUpdateBlockedByDeepFreeze = result.IsBlockedByDeepFreeze;
+                UpdateStatusMessage = result.StatusMessage;
+            }
+            catch (Exception ex)
+            {
+                UpdateStatusMessage = $"Update check failed: {ex.Message}";
+            }
+            finally
+            {
+                IsCheckingForUpdates = false;
+            }
+        }
+
+        public async Task ApplyUpdateAsync()
+        {
+            if (IsDownloadingUpdate || !_isUpdateAvailable) return;
+
+            // Strict safeguard: Check Deep Freeze state
+            if (_deepFreezeService.GetDeepFreezeState() == DeepFreezeState.Frozen)
+            {
+                IsUpdateBlockedByDeepFreeze = true;
+                UpdateStatusMessage = "Deep Freeze is Boot Frozen! Reboot into Thawed mode before updating.";
+                ShowMessage("Cannot apply update while Deep Freeze is Boot Frozen. Please boot into Thawed mode first.");
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(_latestDownloadUrl))
+            {
+                UpdateStatusMessage = "No installer package available for this release.";
+                return;
+            }
+
+            IsDownloadingUpdate = true;
+            UpdateProgressPercent = 0;
+            UpdateStatusMessage = "Downloading update package...";
+
+            bool success = await _updateService.DownloadAndApplyUpdateAsync(
+                _latestDownloadUrl,
+                progress =>
+                {
+                    UpdateProgressPercent = progress;
+                    UpdateStatusMessage = $"Downloading update... {progress}%";
+                },
+                error =>
+                {
+                    UpdateStatusMessage = $"Update error: {error}";
+                    ShowMessage(error);
+                });
+
+            if (!success)
+            {
+                IsDownloadingUpdate = false;
             }
         }
 
