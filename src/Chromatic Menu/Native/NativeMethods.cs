@@ -151,6 +151,10 @@ namespace ChromaticMenu.Native
         [return: MarshalAs(UnmanagedType.Bool)]
         public static extern bool DestroyIcon(IntPtr hIcon);
 
+        [DllImport("gdi32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static extern bool DeleteObject(IntPtr hObject);
+
         // ShellExecuteEx for Windows Properties Sheet
         public const uint SEE_MASK_INVOKEIDLIST = 0x0000000C;
 

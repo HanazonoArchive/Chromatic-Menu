@@ -125,6 +125,17 @@ namespace ChromaticMenu.Uninstaller
                 }
             }
 
+            // Clean up LocalAppData folder if created by non-elevated runs
+            try
+            {
+                string localAppData = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ChromaticMenu");
+                if (Directory.Exists(localAppData))
+                {
+                    Directory.Delete(localAppData, true);
+                }
+            }
+            catch { }
+
             // 4. Remove shortcut folder if empty or remaining
             try
             {
@@ -143,6 +154,19 @@ namespace ChromaticMenu.Uninstaller
                 if (File.Exists(desktopShortcut))
                 {
                     File.Delete(desktopShortcut);
+                }
+            }
+            catch { }
+
+            // 6. Clean up Run at Startup registry entry
+            try
+            {
+                using (var runKey = Registry.CurrentUser.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", true))
+                {
+                    if (runKey != null)
+                    {
+                        runKey.DeleteValue("Chromatic Menu", false);
+                    }
                 }
             }
             catch { }

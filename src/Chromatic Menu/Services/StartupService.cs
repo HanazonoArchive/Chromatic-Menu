@@ -60,12 +60,12 @@ namespace ChromaticMenu.Services
             }
             catch
             {
-                exePath = AppDomain.CurrentDomain.BaseDirectory;
+                exePath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Chromatic Menu.exe");
             }
 
             try
             {
-                using (var key = Registry.CurrentUser.OpenSubKey(RunKeyPath, true))
+                using (var key = Registry.CurrentUser.CreateSubKey(RunKeyPath))
                 {
                     if (key == null)
                     {

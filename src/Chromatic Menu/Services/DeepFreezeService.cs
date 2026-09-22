@@ -64,10 +64,24 @@ namespace ChromaticMenu.Services
                 string[] processNames = new[] { "FrzState2k", "DFServ", "DF5Serv" };
                 foreach (var name in processNames)
                 {
-                    var procs = Process.GetProcessesByName(name);
-                    if (procs != null && procs.Length > 0)
+                    Process[] procs = null;
+                    try
                     {
-                        return true;
+                        procs = Process.GetProcessesByName(name);
+                        if (procs != null && procs.Length > 0)
+                        {
+                            return true;
+                        }
+                    }
+                    finally
+                    {
+                        if (procs != null)
+                        {
+                            foreach (var p in procs)
+                            {
+                                try { p.Dispose(); } catch { }
+                            }
+                        }
                     }
                 }
             }
@@ -141,10 +155,17 @@ namespace ChromaticMenu.Services
                         };
                         using (var proc = Process.Start(psi))
                         {
-                            if (proc.WaitForExit(3000))
+                            if (proc != null)
                             {
-                                if (proc.ExitCode == 1) return DeepFreezeState.Frozen;
-                                if (proc.ExitCode == 0) return DeepFreezeState.Thawed;
+                                if (proc.WaitForExit(3000))
+                                {
+                                    if (proc.ExitCode == 1) return DeepFreezeState.Frozen;
+                                    if (proc.ExitCode == 0) return DeepFreezeState.Thawed;
+                                }
+                                else
+                                {
+                                    try { proc.Kill(); } catch { }
+                                }
                             }
                         }
                     }

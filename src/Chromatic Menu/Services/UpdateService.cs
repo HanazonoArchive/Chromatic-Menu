@@ -202,11 +202,18 @@ namespace ChromaticMenu.Services
 
                 Process.Start(psi);
 
-                // Gracefully close current app to allow MSI to overwrite files
-                System.Windows.Application.Current?.Dispatcher?.Invoke(() =>
+                // Gracefully shutdown current app to allow MSI to overwrite files
+                System.Windows.Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
                 {
-                    System.Windows.Application.Current.MainWindow?.Close();
-                });
+                    try
+                    {
+                        System.Windows.Application.Current.Shutdown();
+                    }
+                    catch
+                    {
+                        Environment.Exit(0);
+                    }
+                }));
 
                 return true;
             }

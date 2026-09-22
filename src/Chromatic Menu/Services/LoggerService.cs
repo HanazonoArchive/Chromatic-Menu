@@ -10,16 +10,31 @@ namespace ChromaticMenu.Services
         private static LoggerService _instance;
         public static LoggerService Instance => _instance ?? (_instance = new LoggerService());
 
-        private readonly string _logDirectory;
-        private readonly string _logFilePath;
+        private string _logDirectory;
+        private string _logFilePath;
         private const long MaxLogFileSizeBytes = 1024 * 1024; // 1 MB
         private const int MaxBackupFiles = 3;
 
+        public string LogDirectory => _logDirectory;
         public string LogFilePath => _logFilePath;
 
         public LoggerService()
         {
-            _logDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "data", "logs");
+            SetDirectory(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "data", "logs"));
+        }
+
+        public void ConfigureDirectory(string dataDirectory)
+        {
+            if (string.IsNullOrWhiteSpace(dataDirectory)) return;
+            lock (_lock)
+            {
+                SetDirectory(Path.Combine(dataDirectory, "logs"));
+            }
+        }
+
+        private void SetDirectory(string dir)
+        {
+            _logDirectory = dir;
             _logFilePath = Path.Combine(_logDirectory, "launcher.log");
         }
 

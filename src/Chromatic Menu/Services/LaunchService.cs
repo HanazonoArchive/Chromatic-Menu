@@ -30,23 +30,24 @@ namespace ChromaticMenu.Services
             item.CheckTargetExists();
             if (item.IsBroken)
             {
-                string exp = Environment.ExpandEnvironmentVariables(item.Target ?? string.Empty);
+                string exp = (item.Target ?? string.Empty).Trim().Trim('"');
+                exp = Environment.ExpandEnvironmentVariables(exp);
                 errorMessage = $"Program not found: {exp}";
                 return false;
             }
 
-            string expandedTarget = Environment.ExpandEnvironmentVariables(item.Target ?? string.Empty);
+            string resolvedTarget = IconService.ResolveExecutablePath(item.Target);
             string expandedArgs = Environment.ExpandEnvironmentVariables(item.Arguments ?? string.Empty);
-            string expandedWorkDir = Environment.ExpandEnvironmentVariables(item.WorkingDirectory ?? string.Empty);
+            string expandedWorkDir = Environment.ExpandEnvironmentVariables((item.WorkingDirectory ?? string.Empty).Trim().Trim('"'));
 
-            if (string.IsNullOrEmpty(expandedWorkDir) && File.Exists(expandedTarget))
+            if (string.IsNullOrEmpty(expandedWorkDir) && File.Exists(resolvedTarget))
             {
-                expandedWorkDir = Path.GetDirectoryName(expandedTarget);
+                expandedWorkDir = Path.GetDirectoryName(resolvedTarget);
             }
 
             var psi = new ProcessStartInfo
             {
-                FileName = expandedTarget,
+                FileName = resolvedTarget,
                 Arguments = expandedArgs,
                 WorkingDirectory = expandedWorkDir,
                 UseShellExecute = true
@@ -55,7 +56,7 @@ namespace ChromaticMenu.Services
             try
             {
                 Process.Start(psi);
-                LoggerService.Instance.Info($"Launched program: {item.Name} ({expandedTarget})");
+                LoggerService.Instance.Info($"Launched program: {item.Name} ({resolvedTarget})");
                 return true;
             }
             catch (Win32Exception winEx) when (winEx.NativeErrorCode == ERROR_ELEVATION_REQUIRED)
@@ -104,18 +105,18 @@ namespace ChromaticMenu.Services
                 return false;
             }
 
-            string expandedTarget = Environment.ExpandEnvironmentVariables(item.Target ?? string.Empty);
+            string resolvedTarget = IconService.ResolveExecutablePath(item.Target);
             string expandedArgs = Environment.ExpandEnvironmentVariables(item.Arguments ?? string.Empty);
-            string expandedWorkDir = Environment.ExpandEnvironmentVariables(item.WorkingDirectory ?? string.Empty);
+            string expandedWorkDir = Environment.ExpandEnvironmentVariables((item.WorkingDirectory ?? string.Empty).Trim().Trim('"'));
 
-            if (string.IsNullOrEmpty(expandedWorkDir) && File.Exists(expandedTarget))
+            if (string.IsNullOrEmpty(expandedWorkDir) && File.Exists(resolvedTarget))
             {
-                expandedWorkDir = Path.GetDirectoryName(expandedTarget);
+                expandedWorkDir = Path.GetDirectoryName(resolvedTarget);
             }
 
             var psi = new ProcessStartInfo
             {
-                FileName = expandedTarget,
+                FileName = resolvedTarget,
                 Arguments = expandedArgs,
                 WorkingDirectory = expandedWorkDir,
                 UseShellExecute = true,

@@ -17,8 +17,8 @@
     <Property Id="ARPPRODUCTICON" Value="AppIcon.ico" />
     <Property Id="ARPHELPLINK" Value="https://github.com/HanazonoArchive" />
 
-    <!-- Default to Program Files (x86) per user requirement -->
-    <StandardDirectory Id="ProgramFilesFolder">
+    <!-- Default to regular Program Files (64-bit) -->
+    <StandardDirectory Id="ProgramFiles64Folder">
       <Directory Id="INSTALLFOLDER" Name="Chromatic Menu">
         <Directory Id="DATAFOLDER" Name="data">
           <Directory Id="ASSETSFOLDER" Name="assets" />

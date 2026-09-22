@@ -27,6 +27,7 @@ namespace ChromaticMenu.Services
 
         public ConfigService()
         {
+            _instance = this;
             string baseDir = AppDomain.CurrentDomain.BaseDirectory;
             try
             {
@@ -49,6 +50,11 @@ namespace ChromaticMenu.Services
             _backupConfigPath = Path.Combine(_dataDirectory, "config.json.bak");
             _tempConfigPath = Path.Combine(_dataDirectory, "config.json.tmp");
             _assetsDirectory = Path.Combine(_dataDirectory, "assets");
+            try
+            {
+                LoggerService.Instance.ConfigureDirectory(_dataDirectory);
+            }
+            catch { }
         }
 
         private void CheckDirectoryWritable(string originalBaseDir = null)

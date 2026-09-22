@@ -13,11 +13,23 @@ namespace ChromaticMenu.Services
         private static IconService _instance;
         public static IconService Instance => _instance ?? (_instance = new IconService());
 
-        private readonly string _iconsDirectory;
+        public string IconsDirectory
+        {
+            get
+            {
+                try
+                {
+                    return Path.Combine(ConfigService.Instance.AssetsDirectory, "icons");
+                }
+                catch
+                {
+                    return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "data", "assets", "icons");
+                }
+            }
+        }
 
         public IconService()
         {
-            _iconsDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "data", "assets", "icons");
         }
 
         public BitmapSource GetOrExtractIcon(string itemId, string targetPath, string kind, int decodeSize = 0)
@@ -26,12 +38,12 @@ namespace ChromaticMenu.Services
 
             try
             {
-                if (!Directory.Exists(_iconsDirectory))
+                if (!Directory.Exists(IconsDirectory))
                 {
-                    Directory.CreateDirectory(_iconsDirectory);
+                    Directory.CreateDirectory(IconsDirectory);
                 }
 
-                string cachedPngPath = Path.Combine(_iconsDirectory, $"{itemId}.png");
+                string cachedPngPath = Path.Combine(IconsDirectory, $"{itemId}.png");
 
                 // 1. If already cached as PNG, verify it is high-resolution (>= 64px)
                 if (File.Exists(cachedPngPath))
@@ -63,8 +75,8 @@ namespace ChromaticMenu.Services
                 }
 
                 // 2. Extract high-resolution icon
-                string expandedPath = Environment.ExpandEnvironmentVariables(targetPath ?? string.Empty);
-                if (!File.Exists(expandedPath) && !Directory.Exists(expandedPath))
+                string resolvedPath = ResolveExecutablePath(targetPath);
+                if (!File.Exists(resolvedPath) && !Directory.Exists(resolvedPath))
                 {
                     // If target path doesn't exist but cached PNG does (even if legacy), return it
                     if (File.Exists(cachedPngPath))
@@ -74,7 +86,7 @@ namespace ChromaticMenu.Services
                     return null;
                 }
 
-                using (Bitmap bmp = ExtractHighResBitmap(expandedPath))
+                using (Bitmap bmp = ExtractHighResBitmap(resolvedPath))
                 {
                     if (bmp != null)
                     {
@@ -95,14 +107,66 @@ namespace ChromaticMenu.Services
             return null;
         }
 
+        public static string ResolveExecutablePath(string path)
+        {
+            if (string.IsNullOrWhiteSpace(path)) return string.Empty;
+            string cleaned = path.Trim().Trim('"');
+            string expanded = Environment.ExpandEnvironmentVariables(cleaned);
+
+            if (File.Exists(expanded) || Directory.Exists(expanded))
+            {
+                return expanded;
+            }
+
+            if (!Path.IsPathRooted(expanded))
+            {
+                // Check System directory (e.g. System32)
+                try
+                {
+                    string sysPath = Path.Combine(Environment.SystemDirectory, expanded);
+                    if (File.Exists(sysPath)) return sysPath;
+                }
+                catch { }
+
+                // Check Windows directory (e.g. C:\Windows)
+                try
+                {
+                    string winPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), expanded);
+                    if (File.Exists(winPath)) return winPath;
+                }
+                catch { }
+
+                // Search along system PATH
+                try
+                {
+                    string pathEnv = Environment.GetEnvironmentVariable("PATH");
+                    if (!string.IsNullOrEmpty(pathEnv))
+                    {
+                        foreach (var folder in pathEnv.Split(new[] { Path.PathSeparator }, StringSplitOptions.RemoveEmptyEntries))
+                        {
+                            try
+                            {
+                                string candidate = Path.Combine(folder.Trim().Trim('"'), expanded);
+                                if (File.Exists(candidate)) return candidate;
+                            }
+                            catch { }
+                        }
+                    }
+                }
+                catch { }
+            }
+
+            return expanded;
+        }
+
         private Bitmap ExtractHighResBitmap(string path)
         {
-            string resolvedPath = path;
+            string resolvedPath = ResolveExecutablePath(path);
             try
             {
-                if (path.EndsWith(".lnk", StringComparison.OrdinalIgnoreCase))
+                if (resolvedPath.EndsWith(".lnk", StringComparison.OrdinalIgnoreCase))
                 {
-                    string target = ResolveShortcutTarget(path);
+                    string target = ResolveShortcutTarget(resolvedPath);
                     if (!string.IsNullOrEmpty(target) && (File.Exists(target) || Directory.Exists(target)))
                     {
                         resolvedPath = target;
@@ -233,17 +297,23 @@ namespace ChromaticMenu.Services
         {
             try
             {
-                var bitmap = new BitmapImage();
-                bitmap.BeginInit();
-                bitmap.CacheOption = BitmapCacheOption.OnLoad;
-                if (decodeSize > 0)
+                if (!File.Exists(pngPath)) return null;
+
+                byte[] bytes = File.ReadAllBytes(pngPath);
+                using (var ms = new MemoryStream(bytes))
                 {
-                    bitmap.DecodePixelWidth = decodeSize;
+                    var bitmap = new BitmapImage();
+                    bitmap.BeginInit();
+                    bitmap.CacheOption = BitmapCacheOption.OnLoad;
+                    if (decodeSize > 0)
+                    {
+                        bitmap.DecodePixelWidth = decodeSize;
+                    }
+                    bitmap.StreamSource = ms;
+                    bitmap.EndInit();
+                    bitmap.Freeze(); // SPEC section 13: Freeze all brushes and images
+                    return bitmap;
                 }
-                bitmap.UriSource = new Uri(pngPath, UriKind.Absolute);
-                bitmap.EndInit();
-                bitmap.Freeze(); // SPEC section 13: Freeze all brushes and images
-                return bitmap;
             }
             catch (Exception ex)
             {
@@ -287,13 +357,13 @@ namespace ChromaticMenu.Services
 
             try
             {
-                if (!Directory.Exists(_iconsDirectory))
+                if (!Directory.Exists(IconsDirectory))
                 {
-                    Directory.CreateDirectory(_iconsDirectory);
+                    Directory.CreateDirectory(IconsDirectory);
                 }
 
-                string cachedPngPath = Path.Combine(_iconsDirectory, $"{itemId}.png");
-                string expandedPath = Environment.ExpandEnvironmentVariables(iconFile);
+                string cachedPngPath = Path.Combine(IconsDirectory, $"{itemId}.png");
+                string expandedPath = ResolveExecutablePath(iconFile);
 
                 if (!File.Exists(expandedPath)) return null;
 
@@ -353,7 +423,7 @@ namespace ChromaticMenu.Services
         {
             try
             {
-                string cachedPngPath = Path.Combine(_iconsDirectory, $"{itemId}.png");
+                string cachedPngPath = Path.Combine(IconsDirectory, $"{itemId}.png");
                 if (File.Exists(cachedPngPath))
                 {
                     File.Delete(cachedPngPath);

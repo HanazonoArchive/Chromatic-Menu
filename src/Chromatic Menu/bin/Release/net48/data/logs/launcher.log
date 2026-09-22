@@ -4,3 +4,31 @@
 [2026-09-22 12:25:00.637] [INFO] SystemInfo: Computer=DESKTOP-ECRC5MH, CPU=Ryzen 5 3600  3.6 GHz, OS=Windows 10 Pro  Build 19045, CT=6 Cores / 12 Threads, RAM=8.64 GB / 16.00 GB, Net=Ethernet (UP 0 Kbps   DOWN 0 Kbps), Disks=[C: SSD  95.99 GB / 110.63 GB; D: HDD  183.69 GB / 465.76 GB; E: NVMe  123.63 GB / 238.46 GB; F: SSD  57.17 GB / 119.23 GB], GPUs=[Radeon RX550/550 Series (Dedicated) 4.00 GB]
 [2026-09-22 12:25:11.294] [INFO] Configuration saved successfully (0 items, 5 tabs).
 [2026-09-22 12:25:11.313] [INFO] Chromatic Menu exiting.
+[2026-09-22 18:55:36.621] [INFO] Configuration saved successfully (0 items, 5 tabs).
+[2026-09-22 19:17:27.931] [INFO] Configuration saved successfully (0 items, 5 tabs).
+[2026-09-22 19:17:27.931] [INFO] Password successfully changed.
+[2026-09-22 19:17:27.979] [INFO] Enabled Start with Windows in HKCU: "C:\Users\Hanazono Archive\Desktop\Chromatic Menu\src\Chromatic Menu\bin\Release\net48\Chromatic Menu.exe"
+[2026-09-22 19:17:27.992] [INFO] Disabled Start with Windows in HKCU.
+[2026-09-22 19:17:28.138] [INFO] Configuration saved successfully (2 items, 5 tabs).
+[2026-09-22 19:21:25.993] [INFO] Configuration saved successfully (2 items, 5 tabs).
+[2026-09-22 19:21:25.994] [INFO] Password successfully changed.
+[2026-09-22 19:21:26.039] [INFO] Enabled Start with Windows in HKCU: "C:\Users\Hanazono Archive\Desktop\Chromatic Menu\src\Chromatic Menu\bin\Release\net48\Chromatic Menu.exe"
+[2026-09-22 19:21:26.048] [INFO] Disabled Start with Windows in HKCU.
+[2026-09-22 19:21:26.111] [INFO] SystemInfo: Computer=DESKTOP-ECRC5MH, CPU=Ryzen 5 3600  3.6 GHz, OS=Windows 10 Pro  Build 19045, CT=6 Cores / 12 Threads, RAM=7.65 GB / 16.00 GB, Net=Ethernet (UP 0 Kbps   DOWN 0 Kbps), Disks=[C: SSD  96.04 GB / 110.63 GB; D: HDD  183.71 GB / 465.76 GB; E: NVMe  123.67 GB / 238.46 GB; F: SSD  57.17 GB / 119.23 GB], GPUs=[Radeon RX550/550 Series (Dedicated) 4.00 GB]
+[2026-09-22 19:21:26.135] [INFO] Configuration saved successfully (4 items, 5 tabs).
+[2026-09-22 19:26:55.657] [INFO] Creating default configuration.
+[2026-09-22 19:26:55.762] [INFO] Configuration saved successfully (0 items, 5 tabs).
+[2026-09-22 19:26:55.885] [INFO] Configuration saved successfully (0 items, 5 tabs).
+[2026-09-22 19:26:55.886] [INFO] Password successfully changed.
+[2026-09-22 19:26:55.928] [INFO] Enabled Start with Windows in HKCU: "C:\Users\Hanazono Archive\Desktop\Chromatic Menu\src\Chromatic Menu\bin\Release\net48\Chromatic Menu.exe"
+[2026-09-22 19:26:55.936] [INFO] Disabled Start with Windows in HKCU.
+[2026-09-22 19:26:56.018] [INFO] SystemInfo: Computer=DESKTOP-ECRC5MH, CPU=Ryzen 5 3600  3.6 GHz, OS=Windows 10 Pro  Build 19045, CT=6 Cores / 12 Threads, RAM=7.56 GB / 16.00 GB, Net=Ethernet (UP 0 Kbps   DOWN 0 Kbps), Disks=[C: SSD  96.05 GB / 110.63 GB; D: HDD  183.71 GB / 465.76 GB; E: NVMe  123.67 GB / 238.46 GB; F: SSD  57.17 GB / 119.23 GB], GPUs=[Radeon RX550/550 Series (Dedicated) 4.00 GB]
+[2026-09-22 19:26:56.034] [INFO] Configuration saved successfully (2 items, 5 tabs).
+[2026-09-22 20:25:09.586] [INFO] Creating default configuration.
+[2026-09-22 20:25:09.689] [INFO] Configuration saved successfully (0 items, 5 tabs).
+[2026-09-22 20:25:09.813] [INFO] Configuration saved successfully (0 items, 5 tabs).
+[2026-09-22 20:25:09.813] [INFO] Password successfully changed.
+[2026-09-22 20:25:09.857] [INFO] Enabled Start with Windows in HKCU: "C:\Users\Hanazono Archive\Desktop\Chromatic Menu\src\Chromatic Menu\bin\Release\net48\Chromatic Menu.exe"
+[2026-09-22 20:25:09.863] [INFO] Disabled Start with Windows in HKCU.
+[2026-09-22 20:25:09.942] [INFO] SystemInfo: Computer=DESKTOP-ECRC5MH, CPU=Ryzen 5 3600  3.6 GHz, OS=Windows 10 Pro  Build 19045, CT=6 Cores / 12 Threads, RAM=7.87 GB / 16.00 GB, Net=Ethernet (UP 0 Kbps   DOWN 0 Kbps), Disks=[C: SSD  96.06 GB / 110.63 GB; D: HDD  183.71 GB / 465.76 GB; E: NVMe  123.67 GB / 238.46 GB; F: SSD  57.17 GB / 119.23 GB], GPUs=[]
+[2026-09-22 20:25:09.971] [INFO] Configuration saved successfully (2 items, 5 tabs).

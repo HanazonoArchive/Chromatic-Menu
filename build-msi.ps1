@@ -40,7 +40,7 @@ $msiPath = "$outputDir\ChromaticMenu-Setup.msi"
 $wxsPath = "$workspaceRoot\installer\ChromaticMenu.wxs"
 
 Write-Host "=== Compiling MSI Installer v$Version via WiX v4 ===" -ForegroundColor Cyan
-& wix build -d Version="$Version" -ext WixToolset.UI.wixext -ext WixToolset.Util.wixext "$wxsPath" -o "$msiPath"
+& wix build -arch x64 -d Version="$Version" -ext WixToolset.UI.wixext -ext WixToolset.Util.wixext "$wxsPath" -o "$msiPath"
 if ($LASTEXITCODE -ne 0) {
     Write-Error "WiX MSI build failed with exit code $LASTEXITCODE"
     exit $LASTEXITCODE

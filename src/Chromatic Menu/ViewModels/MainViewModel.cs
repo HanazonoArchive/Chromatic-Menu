@@ -9,6 +9,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Threading.Tasks;
 using ChromaticMenu.Models;
+using ChromaticMenu.Native;
 using ChromaticMenu.Services;
 
 namespace ChromaticMenu.ViewModels
@@ -1107,64 +1108,73 @@ namespace ChromaticMenu.ViewModels
 
         private void LoadConfig()
         {
-            var config = _configService.Load();
-
-            ShopName = config.Branding?.ShopName ?? "PisoNet";
-            ShopLogoPath = config.Branding?.Logo;
-            LoadShopLogo(ShopLogoPath);
-
-            IsDarkMode = (config.Appearance?.Theme ?? "dark").Equals("dark", StringComparison.OrdinalIgnoreCase);
-            IconSize = config.Appearance?.IconSize > 0 ? config.Appearance.IconSize : 96;
-
-            StartWithWindows = _startupService.IsRunAtStartup();
-
-            SelectedAccentColor = config.Appearance?.Accent ?? "#0284C7";
-            SelectedFontFamily = config.Appearance?.FontFamily ?? "Segoe UI";
-            FontScale = config.Appearance?.FontScale > 0 ? config.Appearance.FontScale : 1.0;
-
-            if (config.Appearance?.CustomColors != null)
+            _isLoadingConfig = true;
+            try
             {
-                CustomBgColor = config.Appearance.CustomColors.Background;
-                CustomSurfaceColor = config.Appearance.CustomColors.Surface;
-                CustomTextColor = config.Appearance.CustomColors.Text;
-                CustomAccentColor = config.Appearance.CustomColors.Accent ?? config.Appearance.Accent;
-            }
+                var config = _configService.Load();
 
-            Tabs.Clear();
-            if (config.Tabs != null && config.Tabs.Count > 0)
-            {
-                foreach (var tab in config.Tabs)
+                ShopName = config.Branding?.ShopName ?? "PisoNet";
+                ShopLogoPath = config.Branding?.Logo;
+                LoadShopLogo(ShopLogoPath);
+
+                IsDarkMode = (config.Appearance?.Theme ?? "dark").Equals("dark", StringComparison.OrdinalIgnoreCase);
+                IconSize = config.Appearance?.IconSize > 0 ? config.Appearance.IconSize : 96;
+
+                _startWithWindows = _startupService.IsRunAtStartup();
+                OnPropertyChanged(nameof(StartWithWindows));
+
+                SelectedAccentColor = config.Appearance?.Accent ?? "#0284C7";
+                SelectedFontFamily = config.Appearance?.FontFamily ?? "Segoe UI";
+                FontScale = config.Appearance?.FontScale > 0 ? config.Appearance.FontScale : 1.0;
+
+                if (config.Appearance?.CustomColors != null)
                 {
-                    Tabs.Add(tab);
+                    CustomBgColor = config.Appearance.CustomColors.Background;
+                    CustomSurfaceColor = config.Appearance.CustomColors.Surface;
+                    CustomTextColor = config.Appearance.CustomColors.Text;
+                    CustomAccentColor = config.Appearance.CustomColors.Accent ?? config.Appearance.Accent;
+                }
+
+                Tabs.Clear();
+                if (config.Tabs != null && config.Tabs.Count > 0)
+                {
+                    foreach (var tab in config.Tabs)
+                    {
+                        Tabs.Add(tab);
+                    }
+                }
+                else
+                {
+                    var defaultTabs = AppConfig.CreateDefault().Tabs;
+                    foreach (var tab in defaultTabs)
+                    {
+                        Tabs.Add(tab);
+                    }
+                }
+
+                SelectedTab = Tabs.FirstOrDefault();
+                SelectedSettingsTab = Tabs.FirstOrDefault();
+                ProgramItemViewModel.AllTabs = Tabs;
+
+                // Wallpaper
+                WallpaperPath = config.Branding?.Wallpaper;
+                LoadWallpaper(WallpaperPath);
+
+                // Apply live appearance tokens
+                ApplyAppearance(config.Appearance);
+
+                CloseCommand = new RelayCommand(() => System.Windows.Application.Current.MainWindow?.Close());
+
+                // First-time setup per user request: ask for new password immediately before everything else
+                if (config.MustChangePassword)
+                {
+                    ModalTitle = "First-Time Setup: Set Administrator Password";
+                    CurrentDialog = DialogType.ChangePassword;
                 }
             }
-            else
+            finally
             {
-                var defaultTabs = AppConfig.CreateDefault().Tabs;
-                foreach (var tab in defaultTabs)
-                {
-                    Tabs.Add(tab);
-                }
-            }
-
-            SelectedTab = Tabs.FirstOrDefault();
-            SelectedSettingsTab = Tabs.FirstOrDefault();
-            ProgramItemViewModel.AllTabs = Tabs;
-
-            // Wallpaper
-            WallpaperPath = config.Branding?.Wallpaper;
-            LoadWallpaper(WallpaperPath);
-
-            // Apply live appearance tokens
-            ApplyAppearance(config.Appearance);
-
-            CloseCommand = new RelayCommand(() => System.Windows.Application.Current.MainWindow?.Close());
-
-            // First-time setup per user request: ask for new password immediately before everything else
-            if (config.MustChangePassword)
-            {
-                ModalTitle = "First-Time Setup: Set Administrator Password";
-                CurrentDialog = DialogType.ChangePassword;
+                _isLoadingConfig = false;
             }
         }
 
@@ -1299,6 +1309,34 @@ namespace ChromaticMenu.ViewModels
 
                 if (File.Exists(expanded))
                 {
+                    if (expanded.EndsWith(".ico", StringComparison.OrdinalIgnoreCase))
+                    {
+                        try
+                        {
+                            using (var ico = new System.Drawing.Icon(expanded, 256, 256))
+                            using (var bmp = ico.ToBitmap())
+                            {
+                                var hBitmap = bmp.GetHbitmap();
+                                try
+                                {
+                                    var bs = System.Windows.Interop.Imaging.CreateBitmapSourceFromHBitmap(
+                                        hBitmap,
+                                        IntPtr.Zero,
+                                        Int32Rect.Empty,
+                                        BitmapSizeOptions.FromEmptyOptions());
+                                    bs.Freeze();
+                                    ShopLogoSource = bs;
+                                    return;
+                                }
+                                finally
+                                {
+                                    NativeMethods.DeleteObject(hBitmap);
+                                }
+                            }
+                        }
+                        catch { }
+                    }
+
                     byte[] bytes = File.ReadAllBytes(expanded);
                     using (var ms = new MemoryStream(bytes))
                     {
@@ -1401,7 +1439,11 @@ namespace ChromaticMenu.ViewModels
             {
                 _configService.Current.PasswordHash = newHash;
                 _configService.Current.MustChangePassword = false;
-                _configService.Save(_configService.Current);
+                if (!_configService.Save(_configService.Current))
+                {
+                    NewPasswordError = "Failed to save administrator password to disk. Please verify file permissions.";
+                    return;
+                }
                 LoggerService.Instance.Info("Password successfully changed.");
                 OnPropertyChanged(nameof(MustChangePassword));
             }
@@ -1577,6 +1619,11 @@ namespace ChromaticMenu.ViewModels
 
         public void HandleDropFiles(string[] filePaths)
         {
+            if (SelectedTab == null && Tabs.Count > 0)
+            {
+                SelectedTab = Tabs.FirstOrDefault();
+            }
+
             if (filePaths == null || filePaths.Length == 0 || SelectedTab == null) return;
 
             var invalidFiles = new List<string>();
@@ -2149,6 +2196,7 @@ namespace ChromaticMenu.ViewModels
             ProgramItemViewModel.AllTabs = Tabs;
 
             _pendingDeleteTab = null;
+            UpdateFilteredItems();
             SaveConfig();
             OpenSettings(2);
         }
@@ -2240,7 +2288,11 @@ namespace ChromaticMenu.ViewModels
             {
                 config.PasswordHash = newHash;
                 config.MustChangePassword = false;
-                _configService.Save(config);
+                if (!_configService.Save(config))
+                {
+                    SecurityError = "Failed to save password change to disk. Please verify file permissions.";
+                    return;
+                }
                 LoggerService.Instance.Info("Administrator password updated via Settings.");
             }
 
@@ -2251,6 +2303,8 @@ namespace ChromaticMenu.ViewModels
         {
             BackupStatusMessage = null;
             BackupErrorMessage = null;
+
+            SaveConfig();
 
             var sfd = new Microsoft.Win32.SaveFileDialog
             {

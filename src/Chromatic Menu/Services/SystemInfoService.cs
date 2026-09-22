@@ -55,6 +55,7 @@ namespace ChromaticMenu.Services
         private long _lastBytesReceived;
         private DateTime _lastNetworkSampleTime = DateTime.MinValue;
         private bool _hasLoggedFirstSnapshot = false;
+        private int _isUpdating = 0;
 
         public SystemInfoService()
         {
@@ -170,6 +171,11 @@ namespace ChromaticMenu.Services
 
         private void PerformLiveUpdate()
         {
+            if (Interlocked.CompareExchange(ref _isUpdating, 1, 0) != 0)
+            {
+                return;
+            }
+
             try
             {
                 var snapshot = new SystemInfoSnapshot
@@ -213,7 +219,11 @@ namespace ChromaticMenu.Services
             }
             catch (Exception ex)
             {
-                LoggerService.Instance.Error("Error during live system info update.", ex);
+                LoggerService.Instance.Warn("Failed during live system info update: " + ex.Message);
+            }
+            finally
+            {
+                _isUpdating = 0;
             }
         }
 
@@ -723,6 +733,32 @@ namespace ChromaticMenu.Services
                         });
                     }
                 }
+            }
+
+            // Fallback for fresh OS before vendor graphics drivers are installed
+            if (list.Count == 0)
+            {
+                try
+                {
+                    using (var searcher = new ManagementObjectSearcher("SELECT Name FROM Win32_VideoController"))
+                    {
+                        foreach (ManagementObject mo in searcher.Get())
+                        {
+                            string name = mo["Name"]?.ToString();
+                            if (!string.IsNullOrWhiteSpace(name))
+                            {
+                                list.Add(new GpuInfoModel
+                                {
+                                    Name = name,
+                                    Tag = "Basic",
+                                    VramString = "Shared"
+                                });
+                                break;
+                            }
+                        }
+                    }
+                }
+                catch { }
             }
 
             // Dedicated first, up to 2 GPUs

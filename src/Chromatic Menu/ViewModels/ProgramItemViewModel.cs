@@ -295,17 +295,19 @@ namespace ChromaticMenu.ViewModels
                 return;
             }
 
-            string expanded = Environment.ExpandEnvironmentVariables(Target ?? string.Empty);
-            bool exists = File.Exists(expanded) || Directory.Exists(expanded);
+            string resolved = IconService.ResolveExecutablePath(Target);
+            bool exists = File.Exists(resolved) || Directory.Exists(resolved);
 
             if (exists)
             {
                 IsBroken = false;
-                ToolTipText = $"{Name}\n{expanded}";
+                ToolTipText = $"{Name}\n{resolved}";
             }
             else
             {
                 IsBroken = true;
+                string cleanTarget = (Target ?? string.Empty).Trim().Trim('"');
+                string expanded = Environment.ExpandEnvironmentVariables(cleanTarget);
                 ToolTipText = $"Program not found: {expanded}";
             }
         }
