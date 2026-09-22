@@ -12,7 +12,7 @@ Built with C# and WPF on .NET Framework 4.8, Chromatic Menu provides an organize
 
 ## Key Features
 
-### 🎮 Application & Game Launcher
+### Application & Game Launcher
 - **Tabbed Organization**: Group programs into custom tabs (e.g., Online Games, Offline Games, Productivity, Utilities) with customizable icons.
 - **Drag-and-Drop Management**: Reorder items, transfer entries between categories, or edit launch targets, parameters, and working directories on the fly.
 - **Broken Path Detection**: Automatically verifies shortcut targets on launch and flags broken or missing executables.
