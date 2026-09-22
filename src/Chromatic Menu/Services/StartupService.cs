@@ -15,12 +15,23 @@ namespace ChromaticMenu.Services
         {
             try
             {
+                // Check CurrentUser (HKCU) first
+                using (var key = Registry.CurrentUser.OpenSubKey(RunKeyPath, false))
+                {
+                    if (key != null)
+                    {
+                        var val = key.GetValue(AppValueName);
+                        if (val != null) return true;
+                    }
+                }
+
+                // Check LocalMachine (HKLM) as fallback
                 using (var key = Registry.LocalMachine.OpenSubKey(RunKeyPath, false))
                 {
                     if (key != null)
                     {
                         var val = key.GetValue(AppValueName);
-                        return val != null;
+                        if (val != null) return true;
                     }
                 }
             }
@@ -54,30 +65,40 @@ namespace ChromaticMenu.Services
 
             try
             {
-                using (var key = Registry.LocalMachine.OpenSubKey(RunKeyPath, true))
+                using (var key = Registry.CurrentUser.OpenSubKey(RunKeyPath, true))
                 {
                     if (key == null)
                     {
-                        error = "Unable to open HKLM Run registry key for writing.";
+                        error = "Unable to open HKCU Run registry key for writing.";
                         return false;
                     }
 
                     if (enable)
                     {
                         key.SetValue(AppValueName, $"\"{exePath}\"");
-                        LoggerService.Instance.Info($"Enabled Start with Windows in HKLM: \"{exePath}\"");
+                        LoggerService.Instance.Info($"Enabled Start with Windows in HKCU: \"{exePath}\"");
                     }
                     else
                     {
                         key.DeleteValue(AppValueName, false);
-                        LoggerService.Instance.Info("Disabled Start with Windows in HKLM.");
+                        LoggerService.Instance.Info("Disabled Start with Windows in HKCU.");
+
+                        // If previously registered in HKLM (e.g. from an older version), attempt cleanup if elevated
+                        try
+                        {
+                            using (var hklmKey = Registry.LocalMachine.OpenSubKey(RunKeyPath, true))
+                            {
+                                hklmKey?.DeleteValue(AppValueName, false);
+                            }
+                        }
+                        catch { }
                     }
                     return true;
                 }
             }
-            catch (UnauthorizedAccessException)
+            catch (UnauthorizedAccessException uex)
             {
-                error = "Administrator rights are required to configure 'Start with Windows' in HKEY_LOCAL_MACHINE.";
+                error = "Registry access restricted: " + uex.Message;
                 LoggerService.Instance.Warn(error);
                 return false;
             }

@@ -90,8 +90,8 @@ namespace ChromaticMenu.Services
                 PerformLiveUpdate();
             });
 
-            // 1-second live refresh cycle per user request
-            _liveTimer = new Timer(_ => PerformLiveUpdate(), null, 1000, 1000);
+            // 3-second live refresh cycle per SPEC section 7 / user request
+            _liveTimer = new Timer(_ => PerformLiveUpdate(), null, 3000, 3000);
         }
 
         public void StopMonitoring()

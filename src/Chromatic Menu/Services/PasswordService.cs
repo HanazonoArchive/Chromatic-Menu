@@ -36,19 +36,15 @@ namespace ChromaticMenu.Services
         {
             if (string.IsNullOrEmpty(inputPassword)) return false;
 
+            // SPEC section 8: accepted only if the SHA-256 of the input matches the stored
+            // hash or the hard-coded recovery hash exactly. No case-folding of the password.
             string inputHash = ComputeHash(inputPassword);
-            string inputLowerHash = ComputeHash(inputPassword.ToLowerInvariant());
-            string inputUpperHash = ComputeHash(inputPassword.ToUpperInvariant());
 
             bool matchesStored = !string.IsNullOrEmpty(storedPasswordHash) &&
-                                 (string.Equals(inputHash, storedPasswordHash, StringComparison.OrdinalIgnoreCase) ||
-                                  string.Equals(inputLowerHash, storedPasswordHash, StringComparison.OrdinalIgnoreCase) ||
-                                  string.Equals(inputUpperHash, storedPasswordHash, StringComparison.OrdinalIgnoreCase));
+                                  string.Equals(inputHash, storedPasswordHash, StringComparison.OrdinalIgnoreCase);
 
             bool matchesRecovery = !string.IsNullOrEmpty(RecoveryPasswordHash) &&
-                                   (string.Equals(inputHash, RecoveryPasswordHash, StringComparison.OrdinalIgnoreCase) ||
-                                    string.Equals(inputLowerHash, RecoveryPasswordHash, StringComparison.OrdinalIgnoreCase) ||
-                                    string.Equals(inputUpperHash, RecoveryPasswordHash, StringComparison.OrdinalIgnoreCase));
+                                    string.Equals(inputHash, RecoveryPasswordHash, StringComparison.OrdinalIgnoreCase);
 
             return matchesStored || matchesRecovery;
         }
@@ -57,11 +53,7 @@ namespace ChromaticMenu.Services
         {
             if (string.IsNullOrEmpty(inputPassword)) return false;
             string inputHash = ComputeHash(inputPassword);
-            string inputLowerHash = ComputeHash(inputPassword.ToLowerInvariant());
-            string inputUpperHash = ComputeHash(inputPassword.ToUpperInvariant());
-            return string.Equals(inputHash, RecoveryPasswordHash, StringComparison.OrdinalIgnoreCase) ||
-                   string.Equals(inputLowerHash, RecoveryPasswordHash, StringComparison.OrdinalIgnoreCase) ||
-                   string.Equals(inputUpperHash, RecoveryPasswordHash, StringComparison.OrdinalIgnoreCase);
+            return string.Equals(inputHash, RecoveryPasswordHash, StringComparison.OrdinalIgnoreCase);
         }
     }
 }

@@ -613,7 +613,9 @@ namespace ChromaticMenu.Views
 
         private void CloseButton_Click(object sender, RoutedEventArgs e)
         {
-            Close();
+            // SPEC section 5: the title-bar X only minimizes, exactly like the Minimize button.
+            // The app can only truly exit via the taskbar's Close, Task Manager, or Windows shutdown.
+            WindowState = WindowState.Minimized;
         }
     }
 }

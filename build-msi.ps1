@@ -14,7 +14,7 @@ $csprojPath = "$workspaceRoot\src\Chromatic Menu\Chromatic Menu.csproj"
 if (-not $Version) {
     [xml]$csprojXml = Get-Content $csprojPath
     $Version = $csprojXml.Project.PropertyGroup.Version
-    if (-not $Version) { $Version = "1.0.0" }
+    if (-not $Version) { $Version = "1.0.2" }
 }
 
 Write-Host "=== Building Chromatic Menu v$Version ($Configuration) ===" -ForegroundColor Cyan

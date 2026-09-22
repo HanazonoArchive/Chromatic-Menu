@@ -1252,11 +1252,13 @@ namespace ChromaticMenu.ViewModels
                         bmp.BeginInit();
                         bmp.CacheOption = BitmapCacheOption.OnLoad;
 
-                        // SPEC section 13: Decode wallpaper at screen size to conserve memory
+                        // SPEC section 13: Decode wallpaper at actual screen size to conserve memory
+                        // on low-spec PCs (e.g. 1366x768) instead of always decoding at 1920+.
                         int screenWidth = 1920;
                         try
                         {
-                            screenWidth = Math.Max(1920, (int)SystemParameters.PrimaryScreenWidth);
+                            int actualWidth = (int)SystemParameters.PrimaryScreenWidth;
+                            if (actualWidth > 0) screenWidth = actualWidth;
                         }
                         catch { }
                         bmp.DecodePixelWidth = screenWidth;
@@ -1348,8 +1350,7 @@ namespace ChromaticMenu.ViewModels
                 PasswordError = string.Empty;
 
                 // SPEC section 8: Default password is admin. On first successful unlock the user must set a new password before continuing.
-                bool isDefaultAdmin = string.Equals(_passwordService.ComputeHash(password), PasswordService.DefaultPasswordHash, StringComparison.OrdinalIgnoreCase) ||
-                                      string.Equals(_passwordService.ComputeHash(password.ToLowerInvariant()), PasswordService.DefaultPasswordHash, StringComparison.OrdinalIgnoreCase);
+                bool isDefaultAdmin = string.Equals(_passwordService.ComputeHash(password), PasswordService.DefaultPasswordHash, StringComparison.OrdinalIgnoreCase);
                 bool mustChange = (config != null && config.MustChangePassword) || isDefaultAdmin;
 
                 if (mustChange)

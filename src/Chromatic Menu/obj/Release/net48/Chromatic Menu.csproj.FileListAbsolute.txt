@@ -18,7 +18,7 @@ C:\Users\Hanazono Archive\Desktop\Chromatic Menu\src\Chromatic Menu\obj\Release\
 C:\Users\Hanazono Archive\Desktop\Chromatic Menu\src\Chromatic Menu\obj\Release\net48\Chromatic Menu.AssemblyInfoInputs.cache
 C:\Users\Hanazono Archive\Desktop\Chromatic Menu\src\Chromatic Menu\obj\Release\net48\Chromatic Menu.AssemblyInfo.cs
 C:\Users\Hanazono Archive\Desktop\Chromatic Menu\src\Chromatic Menu\obj\Release\net48\Chromatic Menu.csproj.CoreCompileInputs.cache
+C:\Users\Hanazono Archive\Desktop\Chromatic Menu\src\Chromatic Menu\obj\Release\net48\Chromatic Menu.sourcelink.json
 C:\Users\Hanazono Archive\Desktop\Chromatic Menu\src\Chromatic Menu\obj\Release\net48\Chromatic Menu.csproj.Fody.CopyLocal.cache
 C:\Users\Hanazono Archive\Desktop\Chromatic Menu\src\Chromatic Menu\obj\Release\net48\Chromatic Menu.exe
 C:\Users\Hanazono Archive\Desktop\Chromatic Menu\src\Chromatic Menu\obj\Release\net48\Chromatic Menu.pdb
-C:\Users\Hanazono Archive\Desktop\Chromatic Menu\src\Chromatic Menu\obj\Release\net48\Chromatic Menu.sourcelink.json

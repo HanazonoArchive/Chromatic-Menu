@@ -1,5 +1,5 @@
 <?ifndef Version?>
-<?define Version = "1.0.0" ?>
+<?define Version = "1.0.2" ?>
 <?endif?>
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
      xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui"
@@ -79,9 +79,15 @@
       </Component>
 
       <Component Id="DataFoldersComponent" Guid="D2A8E19B-4712-4C10-9154-A6A4E6C71D22">
-        <CreateFolder Directory="DATAFOLDER" />
-        <CreateFolder Directory="ASSETSFOLDER" />
-        <CreateFolder Directory="LOGSFOLDER" />
+        <CreateFolder Directory="DATAFOLDER">
+          <util:PermissionEx User="Users" GenericAll="yes" />
+        </CreateFolder>
+        <CreateFolder Directory="ASSETSFOLDER">
+          <util:PermissionEx User="Users" GenericAll="yes" />
+        </CreateFolder>
+        <CreateFolder Directory="LOGSFOLDER">
+          <util:PermissionEx User="Users" GenericAll="yes" />
+        </CreateFolder>
       </Component>
 
       <!-- Complete Folder & Runtime Files Removal On Uninstall -->

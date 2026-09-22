@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "passwordHash": "fdf024dbb567981d6c6defe35175450940c6e04cbb29addf30c65a27b7795bbb",
-  "mustChangePassword": false,
+  "passwordHash": "8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918",
+  "mustChangePassword": true,
   "branding": {
     "shopName": "PisoNet",
     "logo": null,
@@ -9,11 +9,11 @@
   },
   "appearance": {
     "theme": "dark",
-    "accent": "#F59E0B",
+    "accent": "#0284C7",
     "customColors": null,
-    "fontFamily": "Consolas",
+    "fontFamily": "Segoe UI",
     "fontScale": 1.0,
-    "iconSize": 48
+    "iconSize": 96
   },
   "startWithWindows": false,
   "tabs": [

@@ -1679,7 +1679,7 @@
                                                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                                         <controls:LucideIcon Width="13" Height="13" Margin="0,0,6,0" VerticalAlignment="Center">
                                                             <controls:LucideIcon.Style>
-                                                                <Style TargetType="controls:LucideIcon">
+                                                                <Style TargetType="controls:LucideIcon" BasedOn="{StaticResource {x:Type controls:LucideIcon}}">
                                                                     <Setter Property="Icon" Value="shield" />
                                                                     <Setter Property="Foreground" Value="{DynamicResource Brush.TextSecondary}" />
                                                                     <Style.Triggers>

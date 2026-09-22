@@ -223,13 +223,58 @@ namespace ChromaticMenu.Services
             if (string.IsNullOrWhiteSpace(latestStr)) return false;
             if (string.IsNullOrWhiteSpace(currentStr)) return true;
 
-            if (Version.TryParse(latestStr, out Version latestVer) &&
-                Version.TryParse(currentStr, out Version currentVer))
+            string cleanLatest = NormalizeVersionString(latestStr);
+            string cleanCurrent = NormalizeVersionString(currentStr);
+
+            if (TryParseVersion(cleanLatest, out int[] latestParts) &&
+                TryParseVersion(cleanCurrent, out int[] currentParts))
             {
-                return latestVer > currentVer;
+                int maxLen = Math.Max(latestParts.Length, currentParts.Length);
+                for (int i = 0; i < maxLen; i++)
+                {
+                    int l = i < latestParts.Length ? latestParts[i] : 0;
+                    int c = i < currentParts.Length ? currentParts[i] : 0;
+                    if (l > c) return true;
+                    if (l < c) return false;
+                }
+                return false;
             }
 
-            return string.Compare(latestStr, currentStr, StringComparison.OrdinalIgnoreCase) > 0;
+            return string.Compare(cleanLatest, cleanCurrent, StringComparison.OrdinalIgnoreCase) > 0;
+        }
+
+        private static string NormalizeVersionString(string ver)
+        {
+            if (string.IsNullOrWhiteSpace(ver)) return string.Empty;
+            string s = ver.Trim().TrimStart('v', 'V').Trim();
+            int dashIdx = s.IndexOfAny(new[] { '-', '+' });
+            if (dashIdx >= 0)
+            {
+                s = s.Substring(0, dashIdx);
+            }
+            return s.Trim();
+        }
+
+        private static bool TryParseVersion(string ver, out int[] parts)
+        {
+            parts = null;
+            if (string.IsNullOrWhiteSpace(ver)) return false;
+            string[] raw = ver.Split('.');
+            var list = new System.Collections.Generic.List<int>();
+            foreach (var r in raw)
+            {
+                if (int.TryParse(r.Trim(), out int val))
+                {
+                    list.Add(val);
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            if (list.Count == 0) return false;
+            parts = list.ToArray();
+            return true;
         }
     }
 }

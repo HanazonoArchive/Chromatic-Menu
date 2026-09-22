@@ -11,11 +11,11 @@ namespace ChromaticMenu.Services
         private static ConfigService _instance;
         public static ConfigService Instance => _instance ?? (_instance = new ConfigService());
 
-        private readonly string _dataDirectory;
-        private readonly string _configPath;
-        private readonly string _backupConfigPath;
-        private readonly string _tempConfigPath;
-        private readonly string _assetsDirectory;
+        private string _dataDirectory;
+        private string _configPath;
+        private string _backupConfigPath;
+        private string _tempConfigPath;
+        private string _assetsDirectory;
 
         public string DataDirectory => _dataDirectory;
         public string AssetsDirectory => _assetsDirectory;
@@ -38,23 +38,34 @@ namespace ChromaticMenu.Services
             }
             catch { }
 
+            InitPaths(baseDir);
+            CheckDirectoryWritable(baseDir);
+        }
+
+        private void InitPaths(string baseDir)
+        {
             _dataDirectory = Path.Combine(baseDir, "data");
             _configPath = Path.Combine(_dataDirectory, "config.json");
             _backupConfigPath = Path.Combine(_dataDirectory, "config.json.bak");
             _tempConfigPath = Path.Combine(_dataDirectory, "config.json.tmp");
             _assetsDirectory = Path.Combine(_dataDirectory, "assets");
-
-            CheckDirectoryWritable();
         }
 
-        private void CheckDirectoryWritable()
+        private void CheckDirectoryWritable(string originalBaseDir = null)
         {
             try
             {
                 if (!Directory.Exists(_dataDirectory))
                 {
                     Directory.CreateDirectory(_dataDirectory);
+                    TryGrantDirectoryPermissions(_dataDirectory);
                 }
+                if (!Directory.Exists(_assetsDirectory))
+                {
+                    Directory.CreateDirectory(_assetsDirectory);
+                    TryGrantDirectoryPermissions(_assetsDirectory);
+                }
+
                 string testFile = Path.Combine(_dataDirectory, ".write_test");
                 File.WriteAllText(testFile, "test");
                 File.Delete(testFile);
@@ -62,9 +73,65 @@ namespace ChromaticMenu.Services
             }
             catch (Exception ex)
             {
-                IsDirectoryWritable = false;
-                LoggerService.Instance.Warn("Data directory is not writable: " + ex.Message);
+                LoggerService.Instance.Warn("Primary data directory is not writable (" + _dataDirectory + "): " + ex.Message);
+
+                // Fallback to LocalAppData so user configurations and assets are always writable
+                try
+                {
+                    string fallbackBase = Path.Combine(
+                        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                        "ChromaticMenu");
+                    string oldConfigPath = _configPath;
+
+                    InitPaths(fallbackBase);
+
+                    if (!Directory.Exists(_dataDirectory))
+                    {
+                        Directory.CreateDirectory(_dataDirectory);
+                    }
+                    if (!Directory.Exists(_assetsDirectory))
+                    {
+                        Directory.CreateDirectory(_assetsDirectory);
+                    }
+
+                    // If an existing config exists in the restricted directory, copy it to fallback
+                    if (File.Exists(oldConfigPath) && !File.Exists(_configPath))
+                    {
+                        try { File.Copy(oldConfigPath, _configPath, true); } catch { }
+                    }
+
+                    string testFile = Path.Combine(_dataDirectory, ".write_test");
+                    File.WriteAllText(testFile, "test");
+                    File.Delete(testFile);
+                    IsDirectoryWritable = true;
+                    LoggerService.Instance.Info("Successfully redirected data directory to: " + _dataDirectory);
+                }
+                catch (Exception fallbackEx)
+                {
+                    IsDirectoryWritable = false;
+                    LoggerService.Instance.Error("Fallback data directory failed: " + fallbackEx.Message, fallbackEx);
+                }
             }
+        }
+
+        private static void TryGrantDirectoryPermissions(string dirPath)
+        {
+            try
+            {
+                var di = new DirectoryInfo(dirPath);
+                var ds = di.GetAccessControl();
+                var usersSid = new System.Security.Principal.SecurityIdentifier(
+                    System.Security.Principal.WellKnownSidType.BuiltinUsersSid, null);
+                var rule = new System.Security.AccessControl.FileSystemAccessRule(
+                    usersSid,
+                    System.Security.AccessControl.FileSystemRights.FullControl,
+                    System.Security.AccessControl.InheritanceFlags.ContainerInherit | System.Security.AccessControl.InheritanceFlags.ObjectInherit,
+                    System.Security.AccessControl.PropagationFlags.None,
+                    System.Security.AccessControl.AccessControlType.Allow);
+                ds.AddAccessRule(rule);
+                di.SetAccessControl(ds);
+            }
+            catch { }
         }
 
         public AppConfig Load()
