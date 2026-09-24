@@ -72,7 +72,7 @@ export function fmtDateTime(iso) {
 }
 
 export function fmtMinutes(minutes) {
-  const m = Math.round(Number(minutes) || 0);
+  const m = Math.max(0, Math.round(Number(minutes) || 0));
   if (m < 60) return `${m}m`;
   const h = Math.floor(m / 60);
   const r = m % 60;
@@ -105,12 +105,12 @@ export function currencySymbol(code = currency()) {
 }
 
 export function fmtMoney(value, opts = {}) {
-  const n = Number(value) || 0;
+  const n = Math.max(0, Number(value) || 0);
   const defaultFrac = (n > 0 && n < 10 && !Number.isInteger(n)) ? 2 : 0;
   const minFrac = opts.minimumFractionDigits ?? defaultFrac;
   const maxFrac = opts.maximumFractionDigits ?? defaultFrac;
   try {
-    return new Intl.NumberFormat('en-US', {
+    const formatted = new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: currency(),
       currencyDisplay: 'narrowSymbol',
@@ -118,8 +118,13 @@ export function fmtMoney(value, opts = {}) {
       maximumFractionDigits: maxFrac,
       ...opts
     }).format(n);
+    return formatted
+      .replace(/^([^\d\s\-+]+)(\d)/, '$1\u00A0$2')
+      .replace(/(\d)([^\d\s\-+]+)$/, '$1\u00A0$2');
   } catch {
-    return (maxFrac > 0 ? n.toFixed(maxFrac) : Math.round(n)).toLocaleString('en-US');
+    const sym = currencySymbol();
+    const num = (maxFrac > 0 ? n.toFixed(maxFrac) : Math.round(n)).toLocaleString('en-US');
+    return `${sym}\u00A0${num}`;
   }
 }
 
@@ -134,7 +139,7 @@ export function minutesPerUnit() {
 }
 
 export function moneyFromMinutes(minutes) {
-  return (Number(minutes) || 0) / minutesPerUnit();
+  return Math.max(0, Number(minutes) || 0) / minutesPerUnit();
 }
 
 export function rateText() {
