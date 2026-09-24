@@ -64,18 +64,38 @@ namespace ChromaticMenu.Uninstaller
                 return;
             }
 
-            // 1. Terminate any running Chromatic Menu instances
+            // 1. Terminate any running Chromatic Menu or ChromaticTelemetry instances
             try
             {
-                Process[] procs = Process.GetProcessesByName("Chromatic Menu");
-                foreach (Process p in procs)
+                foreach (string name in new[] { "Chromatic Menu", "ChromaticTelemetry" })
                 {
                     try
                     {
-                        p.Kill();
-                        p.WaitForExit(2000);
+                        Process[] procs = Process.GetProcessesByName(name);
+                        foreach (Process p in procs)
+                        {
+                            try
+                            {
+                                p.Kill();
+                                p.WaitForExit(2000);
+                            }
+                            catch { }
+                        }
                     }
                     catch { }
+                }
+            }
+            catch { }
+
+            // Remove telemetry reporter from Windows startup if registered
+            try
+            {
+                using (var key = Registry.LocalMachine.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run", true))
+                {
+                    if (key != null)
+                    {
+                        key.DeleteValue("ChromaticTelemetryReporter", false);
+                    }
                 }
             }
             catch { }

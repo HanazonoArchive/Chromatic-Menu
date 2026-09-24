@@ -4,7 +4,7 @@ import { icon } from './icons.js';
 import {
   esc, todayStr, addDays, daysInclusive, dayStartMs, fmtDay, fmtTime, fmtDateTime, fmtMinutes,
   fmtAgo, fmtMoney, fmtPct, minutesPerUnit, moneyFromMinutes, rateText, currency, currencySymbol, CURRENCIES, cssVar, seriesColor, groupBy, sum,
-  IDLE_PROGRAMS, NON_PROGRAMS, store, TZ
+  IDLE_PROGRAMS, NON_PROGRAMS, formatProgramName, store, TZ
 } from './util.js';
 
 Chart.register(...registerables);
@@ -173,7 +173,7 @@ export async function renderOverview(root) {
           </div>
           <div class="pc-now">
             <div class="eyebrow">${s.is_online ? 'Now using' : 'Last used'}</div>
-            <div class="program ${idle ? 'idle' : ''}" title="${esc(s.last_program)}">${esc(idle && s.is_online ? 'Idle in menu' : s.last_program)}</div>
+            <div class="program ${idle ? 'idle' : ''}" title="${esc(s.last_program)}">${esc(formatProgramName(s.last_program, s.is_online))}</div>
             <div class="meta">${s.is_online ? 'Updated' : 'Last seen'} ${esc(fmtAgo(s.last_seen))}</div>
           </div>
           <div class="pc-usage">
@@ -245,7 +245,8 @@ export async function renderTimeline(root, day) {
     const online = isToday && statusByPc.get(pc)?.is_online;
 
     const bars = segs.map(s => {
-      const tip = `${s.kind === 'idle' ? 'Idle (Chromatic Menu)' : s.program}\n${fmtTime(s.a)} - ${fmtTime(s.b)}  (${fmtMinutes((s.b - s.a) / 60000)})`;
+      const progLabel = s.kind === 'idle' ? (s.program === 'Chromatic Menu' ? 'Idle in menu' : 'Idle (No app reported)') : s.program;
+      const tip = `${progLabel}\n${fmtTime(s.a)} - ${fmtTime(s.b)}  (${fmtMinutes((s.b - s.a) / 60000)})`;
       return `<div class="tl-seg ${s.kind}" style="left:${pct(s.a)}%;width:${Math.max(0.15, pct(s.b) - pct(s.a))}%" data-tip="${esc(tip)}"></div>`;
     }).join('');
 

@@ -42,6 +42,7 @@ namespace ChromaticMenu.Services
         private StreamWriter _writer;
         private bool? _lastConnectOk;
         private string _lastSentProgram;
+        private string _lastDetectedProgram;
         private DateTime _lastSentUtc = DateTime.MinValue;
 
         public void Start()
@@ -108,16 +109,37 @@ namespace ChromaticMenu.Services
             }
         }
 
+        private static bool IsIndependentReporterRunning()
+        {
+            try
+            {
+                return Mutex.TryOpenExisting(@"Global\ChromaticTelemetry_Reporter_Mutex", out _);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         private void Poll()
         {
             if (Interlocked.Exchange(ref _pollRunning, 1) == 1) return;
             try
             {
+                if (IsIndependentReporterRunning())
+                {
+                    return;
+                }
+
                 string program = GetForegroundProgramName();
                 if (program != _lastSentProgram || DateTime.UtcNow - _lastSentUtc >= ResendInterval)
                 {
                     if (Send(TelemetryPipeMessage.ForProgram(program)))
                     {
+                        if (program != _lastSentProgram)
+                        {
+                            LoggerService.Instance.Info($"Foreground program changed to: '{program}'");
+                        }
                         _lastSentProgram = program;
                         _lastSentUtc = DateTime.UtcNow;
                     }
@@ -136,32 +158,54 @@ namespace ChromaticMenu.Services
         public string GetForegroundProgramName()
         {
             IntPtr hwnd = NativeMethods.GetForegroundWindow();
-            if (hwnd == IntPtr.Zero) return TelemetryDefaults.LauncherProgramName;
+            if (hwnd == IntPtr.Zero)
+            {
+                // During brief window transitions, retain the last detected program if available
+                return _lastDetectedProgram ?? TelemetryDefaults.LauncherProgramName;
+            }
 
             NativeMethods.GetWindowThreadProcessId(hwnd, out uint pid);
-            if (pid == 0 || pid == _ownProcessId) return TelemetryDefaults.LauncherProgramName;
+            if (pid == 0)
+            {
+                return _lastDetectedProgram ?? TelemetryDefaults.LauncherProgramName;
+            }
+
+            if (pid == _ownProcessId)
+            {
+                _lastDetectedProgram = TelemetryDefaults.LauncherProgramName;
+                return TelemetryDefaults.LauncherProgramName;
+            }
 
             var className = new StringBuilder(64);
             if (NativeMethods.GetClassName(hwnd, className, className.Capacity) > 0 &&
                 ShellWindowClasses.Contains(className.ToString()))
             {
+                _lastDetectedProgram = TelemetryDefaults.LauncherProgramName;
                 return TelemetryDefaults.LauncherProgramName;
             }
 
             string exePath = GetProcessPath(pid);
-            if (exePath == null) return TelemetryDefaults.UnknownProgramName;
+            if (exePath == null)
+            {
+                return _lastDetectedProgram ?? TelemetryDefaults.UnknownProgramName;
+            }
 
             if (exePath.StartsWith(_windowsDirectory, StringComparison.OrdinalIgnoreCase))
             {
+                _lastDetectedProgram = TelemetryDefaults.WindowsProgramName;
                 return TelemetryDefaults.WindowsProgramName;
             }
 
             if (_menuTargets.TryGetValue(exePath, out string menuName))
             {
-                return TelemetryDefaults.Truncate(menuName, TelemetryDefaults.MaxProgramLength, TelemetryDefaults.UnknownProgramName);
+                string name = TelemetryDefaults.Truncate(menuName, TelemetryDefaults.MaxProgramLength, TelemetryDefaults.UnknownProgramName);
+                _lastDetectedProgram = name;
+                return name;
             }
 
-            return DescribeExecutable(exePath);
+            string described = DescribeExecutable(exePath);
+            _lastDetectedProgram = described;
+            return described;
         }
 
         private static string GetProcessPath(uint pid)

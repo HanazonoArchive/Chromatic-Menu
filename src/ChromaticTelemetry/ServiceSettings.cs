@@ -62,16 +62,35 @@ namespace ChromaticTelemetry
                     installDir = key?.GetValue("InstallDir") as string;
                 }
             }
-            catch
+            catch { }
+
+            if (!string.IsNullOrWhiteSpace(installDir) && Directory.Exists(Path.Combine(installDir, "data")))
             {
-                // Registry unavailable; fall back to the service's own folder below.
+                return Path.Combine(installDir, "data");
             }
 
-            if (string.IsNullOrWhiteSpace(installDir) || !Directory.Exists(installDir))
+            string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+            if (Directory.Exists(Path.Combine(baseDir, "data")))
             {
-                installDir = AppDomain.CurrentDomain.BaseDirectory;
+                return Path.Combine(baseDir, "data");
             }
-            return Path.Combine(installDir, "data");
+
+            // Fallback for standard installed location
+            string defaultProgFiles = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Chromatic Menu", "data");
+            if (Directory.Exists(defaultProgFiles))
+            {
+                return defaultProgFiles;
+            }
+
+            // Fallback for dev environment (e.g. running from build folder)
+            try
+            {
+                string devDir = Path.GetFullPath(Path.Combine(baseDir, "..", "..", "..", "..", "Chromatic Menu", "bin", "Release", "net48", "data"));
+                if (Directory.Exists(devDir)) return devDir;
+            }
+            catch { }
+
+            return Path.Combine(baseDir, "data");
         }
 
         public static ServiceSettings Load(string configPath, out string error)

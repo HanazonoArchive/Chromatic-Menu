@@ -22,6 +22,9 @@
     <Property Id="ARPPRODUCTICON" Value="AppIcon.ico" />
     <Property Id="ARPHELPLINK" Value="https://github.com/HanazonoArchive" />
 
+    <util:CloseApplication Id="CloseChromaticMenu" Target="Chromatic Menu.exe" CloseMessage="no" RebootPrompt="no" TerminateProcess="1" />
+    <util:CloseApplication Id="CloseChromaticTelemetry" Target="ChromaticTelemetry.exe" CloseMessage="no" RebootPrompt="no" TerminateProcess="1" />
+
     <!-- Default to regular Program Files (64-bit) -->
     <StandardDirectory Id="ProgramFiles64Folder">
       <Directory Id="INSTALLFOLDER" Name="Chromatic Menu">

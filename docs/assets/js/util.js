@@ -7,6 +7,16 @@ export const IDLE_PROGRAMS = new Set(['Chromatic Menu', 'Unknown']);
 // Left out of "top program" lists: not a meaningful program for insights.
 export const NON_PROGRAMS = new Set(['Chromatic Menu', 'Unknown', 'Windows']);
 
+export function formatProgramName(program, isOnline = true) {
+  if (!program || program === 'Unknown') {
+    return isOnline ? 'Idle (No app reported)' : 'Unknown';
+  }
+  if (program === 'Chromatic Menu') {
+    return 'Idle in menu';
+  }
+  return program;
+}
+
 export const store = {
   get(key, fallback = null) {
     try {

@@ -15,6 +15,7 @@ namespace ChromaticTelemetry
         private string _configPath;
         private HeartbeatWorker _worker;
         private PipeServer _pipe;
+        private UserSessionManager _sessionManager;
         private Timer _configRetryTimer;
         private string _lastConfigError;
         private DateTime _lastConfigErrorLogUtc = DateTime.MinValue;
@@ -39,6 +40,7 @@ namespace ChromaticTelemetry
             var settings = LoadSettings();
             _worker = new HeartbeatWorker(_log, settings);
             _pipe = new PipeServer(_log, OnPipeMessage);
+            _sessionManager = new UserSessionManager(_log, settings);
 
             _pipe.Start();
             _worker.Start();
@@ -64,7 +66,9 @@ namespace ChromaticTelemetry
         {
             lock (_reloadLock)
             {
-                _worker.ApplySettings(LoadSettings());
+                var settings = LoadSettings();
+                _worker.ApplySettings(settings);
+                _sessionManager?.ApplySettings(settings);
             }
         }
 
@@ -101,6 +105,7 @@ namespace ChromaticTelemetry
         {
             _log.Info("ChromaticTelemetry stopping.");
             _configRetryTimer?.Dispose();
+            _sessionManager?.Dispose();
             _pipe?.Dispose();
             _worker?.Dispose();
         }

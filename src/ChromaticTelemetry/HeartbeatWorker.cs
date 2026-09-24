@@ -46,6 +46,7 @@ namespace ChromaticTelemetry
         private DateTime _programReceivedUtc = DateTime.MinValue;
         private bool _lastSendFailed;
         private bool _loggedDisabled;
+        private string _lastSentProgram;
 
         public HeartbeatWorker(LoggerService log, ServiceSettings settings)
         {
@@ -79,7 +80,12 @@ namespace ChromaticTelemetry
         {
             lock (_programLock)
             {
-                _program = TelemetryDefaults.Truncate(programName, TelemetryDefaults.MaxProgramLength, TelemetryDefaults.UnknownProgramName);
+                string updated = TelemetryDefaults.Truncate(programName, TelemetryDefaults.MaxProgramLength, TelemetryDefaults.UnknownProgramName);
+                if (updated != _program)
+                {
+                    _log.Info($"Foreground program updated from pipe: '{updated}' (was '{_program ?? "none"}')");
+                }
+                _program = updated;
                 _programReceivedUtc = DateTime.UtcNow;
             }
         }
@@ -172,9 +178,10 @@ namespace ChromaticTelemetry
                 {
                     _buffer.Clear();
                 }
-                if (payload.Count > 1 || _lastSendFailed)
+                if (payload.Count > 1 || _lastSendFailed || row.Program != _lastSentProgram)
                 {
-                    _log.Info($"Flush OK, {payload.Count} row(s) sent.");
+                    _log.Info($"Heartbeat sent ({row.Program}), {payload.Count} row(s) sent.");
+                    _lastSentProgram = row.Program;
                 }
                 _lastSendFailed = false;
                 return;

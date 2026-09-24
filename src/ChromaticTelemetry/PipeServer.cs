@@ -48,7 +48,8 @@ namespace ChromaticTelemetry
                 new SecurityIdentifier(WellKnownSidType.LocalSystemSid, null),
                 PipeAccessRights.FullControl, AccessControlType.Allow));
 
-            return new NamedPipeServerStream(TelemetryDefaults.PipeName, PipeDirection.In, 1,
+            return new NamedPipeServerStream(TelemetryDefaults.PipeName, PipeDirection.In, 
+                NamedPipeServerStream.MaxAllowedServerInstances,
                 PipeTransmissionMode.Byte, PipeOptions.Asynchronous, 4096, 4096, security);
         }
 
@@ -58,20 +59,10 @@ namespace ChromaticTelemetry
             {
                 try
                 {
-                    using (var pipe = CreatePipe())
-                    {
-                        _current = pipe;
-                        await pipe.WaitForConnectionAsync(token).ConfigureAwait(false);
-                        using (var reader = new StreamReader(pipe, Encoding.UTF8))
-                        {
-                            string line;
-                            while (!token.IsCancellationRequested &&
-                                   (line = await reader.ReadLineAsync().ConfigureAwait(false)) != null)
-                            {
-                                HandleLine(line);
-                            }
-                        }
-                    }
+                    var pipe = CreatePipe();
+                    _current = pipe;
+                    await pipe.WaitForConnectionAsync(token).ConfigureAwait(false);
+                    _ = Task.Run(() => ReadClientAsync(pipe, token), token);
                 }
                 catch (OperationCanceledException)
                 {
@@ -93,10 +84,24 @@ namespace ChromaticTelemetry
                         break;
                     }
                 }
-                finally
+            }
+        }
+
+        private async Task ReadClientAsync(NamedPipeServerStream pipe, CancellationToken token)
+        {
+            using (pipe)
+            using (var reader = new StreamReader(pipe, Encoding.UTF8))
+            {
+                try
                 {
-                    _current = null;
+                    string line;
+                    while (!token.IsCancellationRequested &&
+                           (line = await reader.ReadLineAsync().ConfigureAwait(false)) != null)
+                    {
+                        HandleLine(line);
+                    }
                 }
+                catch { }
             }
         }
 
