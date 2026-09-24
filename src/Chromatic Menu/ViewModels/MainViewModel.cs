@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using ChromaticMenu.Models;
 using ChromaticMenu.Native;
 using ChromaticMenu.Services;
+using ChromaticMenu.Shared;
 
 namespace ChromaticMenu.ViewModels
 {
@@ -154,10 +155,18 @@ namespace ChromaticMenu.ViewModels
             set => SetProperty(ref _startupError, value);
         }
 
+        public const int TelemetrySettingsPage = 6;
+
         public int SettingsPageIndex
         {
             get => _settingsPageIndex;
-            set => SetProperty(ref _settingsPageIndex, value);
+            set
+            {
+                if (SetProperty(ref _settingsPageIndex, value) && value == TelemetrySettingsPage)
+                {
+                    RefreshTelemetryPage();
+                }
+            }
         }
 
         public string SelectedAccentColor
@@ -574,7 +583,9 @@ namespace ChromaticMenu.ViewModels
                     OnPropertyChanged(nameof(IsConfirmDeleteDialogVisible));
                     OnPropertyChanged(nameof(IsTabDeletePromptVisible));
                     OnPropertyChanged(nameof(IsIconPickerVisible));
+                    OnPropertyChanged(nameof(IsRequestGameDialogVisible));
                     OnPropertyChanged(nameof(IsCompactDialogVisible));
+                    OnPropertyChanged(nameof(ShowDialogDeepFreezeBanner));
                 }
             }
         }
@@ -590,6 +601,10 @@ namespace ChromaticMenu.ViewModels
         public bool IsConfirmDeleteDialogVisible => CurrentDialog == DialogType.ConfirmDelete;
         public bool IsTabDeletePromptVisible => CurrentDialog == DialogType.TabDeletePrompt;
         public bool IsIconPickerVisible => CurrentDialog == DialogType.IconPicker;
+        public bool IsRequestGameDialogVisible => CurrentDialog == DialogType.RequestGame;
+
+        // The Deep Freeze reminder is for technicians; customers requesting a game don't need it.
+        public bool ShowDialogDeepFreezeBanner => IsDeepFreezeInstalled && CurrentDialog != DialogType.RequestGame;
         public bool IsCompactDialogVisible => CurrentDialog != DialogType.None &&
                                               CurrentDialog != DialogType.SettingsHost &&
                                               CurrentDialog != DialogType.TabDeletePrompt &&
@@ -696,6 +711,140 @@ namespace ChromaticMenu.ViewModels
             set => SetProperty(ref _confirmDeleteMessage, value);
         }
 
+        // Telemetry Settings State
+        private bool _telemetryEnabled = true;
+        private string _telemetryUrlInput = string.Empty;
+        private string _telemetryKeyInput = string.Empty;
+        private string _telemetryIntervalInput = TelemetryDefaults.DefaultIntervalSeconds.ToString();
+        private string _telemetrySettingsMessage;
+        private string _telemetrySettingsError;
+        private string _telemetryTestResult;
+        private bool _telemetryTestOk;
+        private bool _isTestingTelemetry;
+        private string _telemetryServiceStatus = "Checking...";
+
+        public bool TelemetryEnabled
+        {
+            get => _telemetryEnabled;
+            set
+            {
+                if (SetProperty(ref _telemetryEnabled, value))
+                {
+                    if (_configService.Current?.Telemetry != null)
+                    {
+                        _configService.Current.Telemetry.Enabled = value;
+                        if (!_isLoadingConfig) SaveConfig();
+                    }
+                    LoadTools();
+                }
+            }
+        }
+
+        public string TelemetryUrlInput
+        {
+            get => _telemetryUrlInput;
+            set => SetProperty(ref _telemetryUrlInput, value);
+        }
+
+        public string TelemetryKeyInput
+        {
+            get => _telemetryKeyInput;
+            set => SetProperty(ref _telemetryKeyInput, value);
+        }
+
+        public string TelemetryIntervalInput
+        {
+            get => _telemetryIntervalInput;
+            set => SetProperty(ref _telemetryIntervalInput, value);
+        }
+
+        public string TelemetrySettingsMessage
+        {
+            get => _telemetrySettingsMessage;
+            set => SetProperty(ref _telemetrySettingsMessage, value);
+        }
+
+        public string TelemetrySettingsError
+        {
+            get => _telemetrySettingsError;
+            set => SetProperty(ref _telemetrySettingsError, value);
+        }
+
+        public string TelemetryTestResult
+        {
+            get => _telemetryTestResult;
+            set => SetProperty(ref _telemetryTestResult, value);
+        }
+
+        public bool TelemetryTestOk
+        {
+            get => _telemetryTestOk;
+            set => SetProperty(ref _telemetryTestOk, value);
+        }
+
+        public bool IsTestingTelemetry
+        {
+            get => _isTestingTelemetry;
+            set => SetProperty(ref _isTestingTelemetry, value);
+        }
+
+        public string TelemetryServiceStatus
+        {
+            get => _telemetryServiceStatus;
+            set => SetProperty(ref _telemetryServiceStatus, value);
+        }
+
+        public string DefaultSupabaseUrl => TelemetryDefaults.SupabaseUrl;
+        public string TelemetryIntervalRangeText => $"{TelemetryDefaults.MinIntervalSeconds} to {TelemetryDefaults.MaxIntervalSeconds} seconds";
+
+        // Request a Game Dialog State
+        private string _gameRequestTitle = string.Empty;
+        private string _gameRequestDescription = string.Empty;
+        private string _gameRequestError;
+        private bool _isSendingGameRequest;
+
+        public int GameTitleMaxLength => TelemetryDefaults.GameTitleMaxLength;
+        public int GameDescriptionMaxLength => TelemetryDefaults.GameDescriptionMaxLength;
+
+        public string GameRequestTitle
+        {
+            get => _gameRequestTitle;
+            set
+            {
+                if (SetProperty(ref _gameRequestTitle, value))
+                {
+                    OnPropertyChanged(nameof(GameTitleCounter));
+                }
+            }
+        }
+
+        public string GameRequestDescription
+        {
+            get => _gameRequestDescription;
+            set
+            {
+                if (SetProperty(ref _gameRequestDescription, value))
+                {
+                    OnPropertyChanged(nameof(GameDescriptionCounter));
+                }
+            }
+        }
+
+        public string GameTitleCounter => $"{(_gameRequestTitle ?? string.Empty).Length}/{TelemetryDefaults.GameTitleMaxLength}";
+        public string GameDescriptionCounter => $"{(_gameRequestDescription ?? string.Empty).Length}/{TelemetryDefaults.GameDescriptionMaxLength}";
+
+        public string GameRequestError
+        {
+            get => _gameRequestError;
+            set => SetProperty(ref _gameRequestError, value);
+        }
+
+        public bool IsSendingGameRequest
+        {
+            get => _isSendingGameRequest;
+            set => SetProperty(ref _isSendingGameRequest, value);
+        }
+
         // Commands
         public RelayCommand ToggleThemeCommand { get; }
         public RelayCommand ToggleSessionLockCommand { get; }
@@ -748,6 +897,11 @@ namespace ChromaticMenu.ViewModels
         public RelayCommand OpenLogFolderCommand { get; }
         public RelayCommand CheckForUpdatesCommand { get; }
         public RelayCommand ApplyUpdateCommand { get; }
+        public RelayCommand ApplyTelemetrySettingsCommand { get; }
+        public RelayCommand ResetTelemetryDefaultsCommand { get; }
+        public RelayCommand TestTelemetryConnectionCommand { get; }
+        public RelayCommand RefreshTelemetryStatusCommand { get; }
+        public RelayCommand SubmitGameRequestCommand { get; }
 
         public Action OnFocusPasswordInput { get; set; }
         public Action OnFocusNewPasswordInput { get; set; }
@@ -770,6 +924,11 @@ namespace ChromaticMenu.ViewModels
 
             CheckForUpdatesCommand = new RelayCommand(async () => await CheckForUpdatesAsync());
             ApplyUpdateCommand = new RelayCommand(async () => await ApplyUpdateAsync());
+            ApplyTelemetrySettingsCommand = new RelayCommand(ApplyTelemetrySettings);
+            ResetTelemetryDefaultsCommand = new RelayCommand(ResetTelemetryDefaults);
+            TestTelemetryConnectionCommand = new RelayCommand(async () => await TestTelemetryConnectionAsync());
+            RefreshTelemetryStatusCommand = new RelayCommand(RefreshTelemetryPage);
+            SubmitGameRequestCommand = new RelayCommand(async () => await SubmitGameRequestAsync());
 
             ToggleSessionLockCommand = new RelayCommand(() =>
             {
@@ -823,7 +982,11 @@ namespace ChromaticMenu.ViewModels
             {
                 if (param is TechnicalToolModel tool)
                 {
-                    if (!_toolLaunchService.LaunchTool(tool, out string error))
+                    if (tool.Action == ToolAction.RequestGame)
+                    {
+                        OpenRequestGameDialog();
+                    }
+                    else if (!_toolLaunchService.LaunchTool(tool, out string error))
                     {
                         ShowMessage(error);
                     }
@@ -1095,6 +1258,13 @@ namespace ChromaticMenu.ViewModels
                 _isLoadingConfig = false;
             }
             StartSystemInfoMonitoring();
+
+            var reporter = TelemetryReporterService.Instance;
+            reporter.UpdateMenuItems(_configService.Current?.Items ?? new List<ProgramItem>());
+            reporter.Start();
+            // The service may have started before this user logged in; make sure it
+            // has the current Start with Windows and telemetry state.
+            reporter.RequestReload();
         }
 
         private void LoadTools()
@@ -1103,6 +1273,11 @@ namespace ChromaticMenu.ViewModels
             foreach (var tool in _toolLaunchService.GetDefaultTools())
             {
                 TechnicalTools.Add(tool);
+            }
+            // Requests go to Supabase, so the tool is hidden when telemetry is off.
+            if (_telemetryEnabled)
+            {
+                TechnicalTools.Add(ToolLaunchService.RequestGameTool);
             }
         }
 
@@ -1122,6 +1297,16 @@ namespace ChromaticMenu.ViewModels
 
                 _startWithWindows = _startupService.IsRunAtStartup();
                 OnPropertyChanged(nameof(StartWithWindows));
+
+                // The service cannot read this user's HKCU Run key, so it relies on
+                // config.startWithWindows; keep it matching the real registry state.
+                if (config.StartWithWindows != _startWithWindows)
+                {
+                    config.StartWithWindows = _startWithWindows;
+                    _configService.Save(config);
+                }
+
+                LoadTelemetryInputs(config.Telemetry);
 
                 SelectedAccentColor = config.Appearance?.Accent ?? "#0284C7";
                 SelectedFontFamily = config.Appearance?.FontFamily ?? "Segoe UI";
@@ -1457,7 +1642,7 @@ namespace ChromaticMenu.ViewModels
 
         public void OpenSettings(int pageIndex)
         {
-            SettingsPageIndex = Math.Max(0, Math.Min(5, pageIndex));
+            SettingsPageIndex = Math.Max(0, Math.Min(TelemetrySettingsPage, pageIndex));
             ModalTitle = "Settings";
             CurrentDialog = DialogType.SettingsHost;
         }
@@ -1485,6 +1670,7 @@ namespace ChromaticMenu.ViewModels
             }
 
             CurrentDialog = DialogType.None;
+            GameRequestError = null;
             PasswordError = string.Empty;
             NewPasswordError = string.Empty;
             WebsiteError = string.Empty;
@@ -1512,6 +1698,10 @@ namespace ChromaticMenu.ViewModels
                     config.Branding.ShopName = ShopName;
                 }
                 _configService.Save(config);
+
+                var reporter = TelemetryReporterService.Instance;
+                reporter.UpdateMenuItems(config.Items);
+                reporter.RequestReload();
             }
         }
 
@@ -1780,6 +1970,7 @@ namespace ChromaticMenu.ViewModels
         public void StopMonitoring()
         {
             _systemInfoService.StopMonitoring();
+            TelemetryReporterService.Instance.Dispose();
         }
 
         private System.Threading.Timer _messageDismissTimer;
@@ -2449,6 +2640,143 @@ namespace ChromaticMenu.ViewModels
             if (!success)
             {
                 IsDownloadingUpdate = false;
+            }
+        }
+
+        #endregion
+
+        #region Telemetry Settings & Request a Game
+
+        private void LoadTelemetryInputs(TelemetrySettings telemetry)
+        {
+            telemetry = telemetry ?? new TelemetrySettings();
+            TelemetryEnabled = telemetry.Enabled;
+            TelemetryUrlInput = telemetry.SupabaseUrl ?? string.Empty;
+            TelemetryKeyInput = telemetry.SupabaseAnonKey ?? string.Empty;
+            TelemetryIntervalInput = TelemetryDefaults.ClampInterval(telemetry.HeartbeatIntervalSeconds).ToString();
+        }
+
+        private void RefreshTelemetryPage()
+        {
+            TelemetrySettingsMessage = null;
+            TelemetrySettingsError = null;
+            TelemetryTestResult = null;
+            TelemetryServiceStatus = "Checking...";
+            OnlineService.Instance.GetServiceStatusAsync().ContinueWith(
+                t => TelemetryServiceStatus = t.Result,
+                TaskScheduler.FromCurrentSynchronizationContext());
+        }
+
+        private void ApplyTelemetrySettings()
+        {
+            TelemetrySettingsMessage = null;
+            TelemetrySettingsError = null;
+
+            string url = (TelemetryUrlInput ?? string.Empty).Trim().TrimEnd('/');
+            if (url.Length > 0 &&
+                !url.StartsWith("https://", StringComparison.OrdinalIgnoreCase) &&
+                !url.StartsWith("http://", StringComparison.OrdinalIgnoreCase))
+            {
+                TelemetrySettingsError = "The Supabase URL must start with https:// (leave it empty to use the default).";
+                return;
+            }
+
+            if (!int.TryParse((TelemetryIntervalInput ?? string.Empty).Trim(), out int interval) ||
+                interval < TelemetryDefaults.MinIntervalSeconds || interval > TelemetryDefaults.MaxIntervalSeconds)
+            {
+                TelemetrySettingsError = $"The heartbeat interval must be a whole number from {TelemetryDefaults.MinIntervalSeconds} to {TelemetryDefaults.MaxIntervalSeconds} seconds.";
+                return;
+            }
+
+            var telemetry = _configService.Current?.Telemetry;
+            if (telemetry == null) return;
+
+            string key = (TelemetryKeyInput ?? string.Empty).Trim();
+            telemetry.SupabaseUrl = url.Length == 0 ? null : url;
+            telemetry.SupabaseAnonKey = key.Length == 0 ? null : key;
+            telemetry.HeartbeatIntervalSeconds = interval;
+            TelemetryUrlInput = url;
+            TelemetryKeyInput = key;
+            TelemetryIntervalInput = interval.ToString();
+
+            SaveConfig();
+            TelemetrySettingsMessage = "Saved. The telemetry service applies it within a few seconds.";
+        }
+
+        private void ResetTelemetryDefaults()
+        {
+            TelemetryUrlInput = string.Empty;
+            TelemetryKeyInput = string.Empty;
+            TelemetryIntervalInput = TelemetryDefaults.DefaultIntervalSeconds.ToString();
+            ApplyTelemetrySettings();
+        }
+
+        private async Task TestTelemetryConnectionAsync()
+        {
+            if (IsTestingTelemetry) return;
+            IsTestingTelemetry = true;
+            TelemetryTestOk = false;
+            TelemetryTestResult = "Testing connection...";
+            try
+            {
+                string error = await OnlineService.Instance.TestConnectionAsync(TelemetryUrlInput, TelemetryKeyInput);
+                TelemetryTestOk = error == null;
+                TelemetryTestResult = error ?? "Connected. Supabase accepted the URL and key.";
+            }
+            finally
+            {
+                IsTestingTelemetry = false;
+            }
+        }
+
+        private void OpenRequestGameDialog()
+        {
+            var remaining = OnlineService.Instance.GameRequestCooldownRemaining;
+            if (remaining > TimeSpan.Zero)
+            {
+                int minutes = (int)Math.Ceiling(remaining.TotalMinutes);
+                ShowMessage($"You can send another request in {minutes} minute{(minutes == 1 ? "" : "s")}.");
+                return;
+            }
+
+            GameRequestTitle = string.Empty;
+            GameRequestDescription = string.Empty;
+            GameRequestError = null;
+            ModalTitle = "Request a Game";
+            CurrentDialog = DialogType.RequestGame;
+        }
+
+        private async Task SubmitGameRequestAsync()
+        {
+            if (IsSendingGameRequest || CurrentDialog != DialogType.RequestGame) return;
+
+            string title = (GameRequestTitle ?? string.Empty).Trim();
+            if (title.Length == 0)
+            {
+                GameRequestError = "Please enter the game title.";
+                return;
+            }
+
+            IsSendingGameRequest = true;
+            GameRequestError = null;
+            try
+            {
+                string error = await OnlineService.Instance.SendGameRequestAsync(
+                    _configService.Current?.Telemetry, ShopName, title, GameRequestDescription);
+
+                if (error == null)
+                {
+                    CloseModal();
+                    ShowMessage("Request sent. Thank you!");
+                }
+                else
+                {
+                    GameRequestError = error;
+                }
+            }
+            finally
+            {
+                IsSendingGameRequest = false;
             }
         }
 

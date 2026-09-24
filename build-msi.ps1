@@ -14,13 +14,21 @@ $csprojPath = "$workspaceRoot\src\Chromatic Menu\Chromatic Menu.csproj"
 if (-not $Version) {
     [xml]$csprojXml = Get-Content $csprojPath
     $Version = $csprojXml.Project.PropertyGroup.Version
-    if (-not $Version) { $Version = "1.0.2" }
+    if (-not $Version) { $Version = "1.0.4" }
 }
 
 Write-Host "=== Building Chromatic Menu v$Version ($Configuration) ===" -ForegroundColor Cyan
 & dotnet build -c $Configuration "/p:Version=$Version" "/p:AssemblyVersion=$Version.0" "/p:FileVersion=$Version.0" "$csprojPath"
 if ($LASTEXITCODE -ne 0) {
     Write-Error "Dotnet build failed with exit code $LASTEXITCODE"
+    exit $LASTEXITCODE
+}
+
+Write-Host "=== Building ChromaticTelemetry service v$Version ($Configuration) ===" -ForegroundColor Cyan
+$serviceCsproj = "$workspaceRoot\src\ChromaticTelemetry\ChromaticTelemetry.csproj"
+& dotnet build -c $Configuration "/p:Version=$Version" "/p:AssemblyVersion=$Version.0" "/p:FileVersion=$Version.0" "$serviceCsproj"
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "Service build failed with exit code $LASTEXITCODE"
     exit $LASTEXITCODE
 }
 

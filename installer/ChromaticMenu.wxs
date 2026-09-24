@@ -1,5 +1,5 @@
 <?ifndef Version?>
-<?define Version = "1.0.2" ?>
+<?define Version = "1.0.4" ?>
 <?endif?>
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
      xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui"
@@ -10,7 +10,12 @@
            UpgradeCode="5B0A2E55-27B9-4DF5-B9F2-4740D2CF3A19" 
            Scope="perMachine">
     
-    <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." AllowSameVersionUpgrades="yes" />
+    <!-- afterInstallExecute: install the new version first, then remove the old one.
+         Components that keep the same GUID stay installed, so an older version's
+         uninstall rules (1.0.3 and earlier wiped data\ on uninstall) never run for them. -->
+    <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed."
+                  AllowSameVersionUpgrades="yes"
+                  Schedule="afterInstallExecute" />
     <MediaTemplate EmbedCab="yes" />
 
     <Icon Id="AppIcon.ico" SourceFile="src\Chromatic Menu\Resources\app.ico" />
@@ -90,18 +95,39 @@
         </CreateFolder>
       </Component>
 
-      <!-- Complete Folder & Runtime Files Removal On Uninstall -->
+      <!-- Kept with its original GUID so upgrading from 1.0.3 does not run 1.0.3's
+           data-wiping uninstall rules (see MajorUpgrade above). It no longer deletes
+           anything itself: the MSI never removes data\, so upgrades always keep the
+           shop's configuration. A full wipe is done only by Uninstall.exe. -->
       <Component Id="FolderCleanupComponent" Guid="874219AC-2E5F-4A9B-9831-C9D812345678">
         <RegistryValue Root="HKLM" Key="Software\HanazonoArchive\ChromaticMenu" Name="FolderCleanup" Type="integer" Value="1" KeyPath="yes" />
-        <util:RemoveFolderEx Property="INSTALLFOLDER" On="uninstall" />
-        <RemoveFile Id="PurgeLogsFiles" On="uninstall" Name="*.*" Directory="LOGSFOLDER" />
-        <RemoveFolder Id="PurgeLogsFolder" On="uninstall" Directory="LOGSFOLDER" />
-        <RemoveFile Id="PurgeAssetsFiles" On="uninstall" Name="*.*" Directory="ASSETSFOLDER" />
-        <RemoveFolder Id="PurgeAssetsFolder" On="uninstall" Directory="ASSETSFOLDER" />
-        <RemoveFile Id="PurgeDataFiles" On="uninstall" Name="*.*" Directory="DATAFOLDER" />
-        <RemoveFolder Id="PurgeDataFolder" On="uninstall" Directory="DATAFOLDER" />
-        <RemoveFile Id="PurgeInstallFiles" On="uninstall" Name="*.*" Directory="INSTALLFOLDER" />
-        <RemoveFolder Id="PurgeInstallFolder" On="uninstall" Directory="INSTALLFOLDER" />
+      </Component>
+
+      <!-- Telemetry Windows service (sends only when Start with Windows and telemetry are on) -->
+      <Component Id="TelemetryService" Guid="3E9B6C71-4F0A-4B7E-9D2C-8A15F6E4C307">
+        <File Id="ChromaticTelemetryExe" Source="src\ChromaticTelemetry\bin\Release\net48\ChromaticTelemetry.exe" KeyPath="yes" />
+        <File Id="ChromaticTelemetryConfig" Source="src\ChromaticTelemetry\bin\Release\net48\ChromaticTelemetry.exe.config" />
+        <ServiceInstall Id="ChromaticTelemetryService"
+                        Name="ChromaticTelemetry"
+                        DisplayName="Chromatic Telemetry"
+                        Description="Sends anonymous PC on/off and program-name heartbeats for Chromatic Menu."
+                        Start="auto"
+                        Type="ownProcess"
+                        ErrorControl="normal"
+                        Account="LocalSystem"
+                        Vital="yes">
+          <util:ServiceConfig FirstFailureActionType="restart"
+                              SecondFailureActionType="restart"
+                              ThirdFailureActionType="restart"
+                              RestartServiceDelayInSeconds="60"
+                              ResetPeriodInDays="1" />
+        </ServiceInstall>
+        <ServiceControl Id="ControlChromaticTelemetry"
+                        Name="ChromaticTelemetry"
+                        Start="install"
+                        Stop="both"
+                        Remove="uninstall"
+                        Wait="yes" />
       </Component>
     </ComponentGroup>
 

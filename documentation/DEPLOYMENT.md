@@ -4,6 +4,35 @@ This guide is written for internet café ("pisonet") technicians and system admi
 
 ---
 
+## Upgrading PCs from v1.0.3 to v1.0.4
+
+**Why a backup is needed for this one upgrade:** an update first removes the old version, and the v1.0.3 installer deletes the whole `data` folder (programs, tabs, cached icons, logo, wallpaper, logs) when it is removed. v1.0.4 cannot change how the already-installed 1.0.3 removes itself. It installs before removing 1.0.3, which should keep the data, but the backup below guarantees it. From v1.0.4 on, the installer never deletes `data`, so later updates need no backup.
+
+Copy `tools\ChromaticMenu-DataTool.bat` to a USB drive, then on **each PC**:
+
+1. **Boot the PC Thawed** (Deep Freeze). Anything done while Frozen is lost on reboot.
+2. Run `ChromaticMenu-DataTool.bat` (it asks for admin rights) and choose **[0] Backup**. Wait for `Backup OK` with the number of programs. The backup is stored in `C:\ChromaticMenu-Backup\latest`.
+3. Open Chromatic Menu, **Settings > About > Check for Updates**, then **Download & Install Update**. Accept the Windows admin prompt.
+4. Run the tool again and choose **[1] Restore**. If the data survived the update, the tool says so and restoring is optional. Restore force-closes the launcher first, keeps a copy of the current data in `C:\ChromaticMenu-Backup\pre-restore`, and can start the launcher again.
+5. Check that the programs, tabs and shop name are back.
+6. In PowerShell, check the telemetry service is running:
+   ```powershell
+   Get-Service ChromaticTelemetry
+   ```
+   `Status` should be `Running`. Settings > Telemetry also shows the service status.
+7. **Refreeze** the PC.
+
+Safety rules built into the tool: Backup refuses to overwrite a backup that has more programs than the current data (protects a good backup if you run Backup after a wipe by mistake), and it always keeps the previous backup in `C:\ChromaticMenu-Backup\previous`.
+
+## Telemetry & Dashboard Setup
+
+1. **Supabase:** follow `docs/setup.html` (or the deployed dashboard's Setup page). Create a project, run `docs/supabase/schema.sql` in the SQL Editor, turn off public sign-ups, and create your dashboard user.
+2. **Each PC (Thawed):** Settings > General > **Start with Windows** on. Settings > Telemetry > **Enable telemetry** on, then enter the Supabase URL and anon key (empty = built-in defaults), click **Save**, then **Test connection**. Heartbeats are only sent when Start with Windows and telemetry are both on.
+3. **Dashboard:** in the GitHub repository, Settings > Pages > Deploy from a branch > `main` / `docs`. Open the site, enter the same URL and anon key, and sign in.
+4. **Logs:** the service writes `C:\Program Files\Chromatic Menu\data\logs\telemetry.log` (failed sends, flushed batches, config problems). The anon key is never logged.
+
+---
+
 ## 1. System Requirements & Architecture
 
 - **Operating System**: Windows 10 (64-bit, Version 22H2 Build 19045 recommended).

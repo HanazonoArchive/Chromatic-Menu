@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Supabase Setup - Chromatic Menu Dashboard</title>
+  <meta name="description" content="Step-by-step guide to set up Supabase for the Chromatic Menu dashboard.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%230284c7'/%3E%3Cg fill='none' stroke='white' stroke-width='2'%3E%3Crect x='6' y='6' width='5' height='5' rx='1'/%3E%3Crect x='13' y='6' width='5' height='5' rx='1'/%3E%3Crect x='6' y='13' width='5' height='5' rx='1'/%3E%3Crect x='13' y='13' width='5' height='5' rx='1'/%3E%3C/g%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/app.css">
+  <script>
+    try { document.documentElement.setAttribute('data-theme', localStorage.getItem('cm.theme') === 'light' ? 'light' : 'dark'); } catch (e) {}
+  </script>
+</head>
+<body>
+  <div class="doc">
+    <header>
+      <div class="brand" style="margin:0">
+        <div class="brand-mark"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg></div>
+        <div><div class="brand-name">Chromatic Menu</div><div class="brand-sub">Setup guide</div></div>
+      </div>
+      <a class="btn" href="index.html">Open dashboard</a>
+    </header>
+
+    <h1>Set up Supabase for the dashboard</h1>
+    <p class="lead">This takes about ten minutes and is done once. Supabase stores the heartbeats your PCs send and the game requests customers submit. The free plan is enough for a small shop.</p>
+
+    <div class="alert warn" style="margin-bottom:8px">
+      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+      <div>Only ever use the <b>anon / public</b> key, in Chromatic Menu and in this dashboard. Never paste the <b>service_role</b> key anywhere: it bypasses all security.</div>
+    </div>
+
+    <section class="step">
+      <div class="step-num">1</div>
+      <div>
+        <h2>Create a Supabase project</h2>
+        <ol>
+          <li>Go to <a href="https://supabase.com" target="_blank" rel="noopener">supabase.com</a> and sign up for a free account.</li>
+          <li>Click <b>New project</b>. Give it a name (for example <span class="kbd">pisonet</span>), set a database password, and choose the region closest to you (for the Philippines, <b>Southeast Asia (Singapore)</b>).</li>
+          <li>Wait a minute or two while the project is created.</li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="step" id="schema">
+      <div class="step-num">2</div>
+      <div>
+        <h2>Run the database schema</h2>
+        <ol>
+          <li>In your project, open <b>SQL Editor</b> from the left menu and click <b>New query</b>.</li>
+          <li>Click <b>Copy</b> below, paste everything into the editor, and click <b>Run</b>.</li>
+          <li>You should see <i>Success</i>. Running it again later is safe; it never deletes your data.</li>
+        </ol>
+        <p>It creates the tables, the security rules (the public key can only add data, never read it), the functions the dashboard uses, and two scheduled jobs that summarise each day and remove raw heartbeats older than 90 days.</p>
+        <div class="code">
+          <button class="btn sm copy" id="copySchema">Copy</button>
+          <pre id="schemaText">Loading schema...</pre>
+        </div>
+        <p class="hint">The same file is in the repository at <span class="kbd">docs/supabase/schema.sql</span>.</p>
+      </div>
+    </section>
+
+    <section class="step">
+      <div class="step-num">3</div>
+      <div>
+        <h2>Turn off public sign-ups</h2>
+        <p>Only accounts you create yourself should be able to open the dashboard.</p>
+        <ol>
+          <li>Open <b>Authentication</b>, then <b>Sign In / Providers</b>.</li>
+          <li>Turn off <b>Allow new users to sign up</b> and save.</li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="step">
+      <div class="step-num">4</div>
+      <div>
+        <h2>Create your dashboard login</h2>
+        <ol>
+          <li>Open <b>Authentication</b>, then <b>Users</b>, and click <b>Add user</b>, then <b>Create new user</b>.</li>
+          <li>Enter your email and a strong password, and tick <b>Auto Confirm User</b>.</li>
+          <li>Repeat for anyone else who should see the dashboard.</li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="step">
+      <div class="step-num">5</div>
+      <div>
+        <h2>Copy the project URL and anon key</h2>
+        <ol>
+          <li>Open <b>Project Settings</b>, then <b>API</b> (or <b>Data API</b> and <b>API Keys</b>).</li>
+          <li>Copy the <b>Project URL</b>, for example <span class="kbd">https://abcdefgh.supabase.co</span>.</li>
+          <li>Copy the <b>anon</b> / <b>public</b> key (a long text starting with <span class="kbd">eyJ</span>).</li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="step">
+      <div class="step-num">6</div>
+      <div>
+        <h2>Connect the PCs and the dashboard</h2>
+        <p><b>On each PC</b> (booted Thawed if Deep Freeze is installed):</p>
+        <ol>
+          <li>Open Chromatic Menu, click <b>Settings</b>, and enter the admin password.</li>
+          <li>In <b>General</b>, make sure <b>Start with Windows</b> is on. Heartbeats are only sent when it is.</li>
+          <li>In <b>Telemetry</b>, keep <b>Enable telemetry</b> on, paste the Project URL and anon key (or leave them empty to use the built-in defaults), click <b>Save</b>, then <b>Test connection</b>.</li>
+          <li>Check that <b>Service</b> shows <b>Running</b>. Then freeze the PC again.</li>
+        </ol>
+        <p><b>In this dashboard:</b> open the <a href="index.html">dashboard</a>, paste the same URL and anon key, and sign in with the account from step 4. You stay signed in on that browser until you log out.</p>
+      </div>
+    </section>
+
+    <section class="step">
+      <div class="step-num">7</div>
+      <div>
+        <h2>Troubleshooting</h2>
+        <ul>
+          <li><b>No PCs appear.</b> On the PC, Settings, Telemetry should show Service: Running, and Start with Windows plus Enable telemetry must both be on. The service log is at <span class="kbd">C:\Program Files\Chromatic Menu\data\logs\telemetry.log</span>.</li>
+          <li><b>"The database is not set up yet".</b> Step 2 was not run, or it ran on a different project than the URL you entered.</li>
+          <li><b>Sign in fails.</b> The user must exist in Authentication, Users and be confirmed.</li>
+          <li><b>Game requests fail on the PC.</b> Each PC can send one request every 5 minutes; titles are limited to 100 characters and details to 500.</li>
+          <li><b>Check that data is private.</b> This command uses the public key to try to read heartbeats. It must return an empty list <span class="kbd">[]</span> or a permission error, never data:
+            <div class="code"><pre>curl "https://YOUR-PROJECT.supabase.co/rest/v1/heartbeats?select=*&amp;limit=1" -H "apikey: YOUR-ANON-KEY" -H "Authorization: Bearer YOUR-ANON-KEY"</pre></div>
+          </li>
+        </ul>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    (function () {
+      var pre = document.getElementById('schemaText');
+      var btn = document.getElementById('copySchema');
+      fetch('supabase/schema.sql', { cache: 'no-cache' })
+        .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); })
+        .then(function (text) { pre.textContent = text; })
+        .catch(function () {
+          pre.textContent = 'Could not load the schema here. Open docs/supabase/schema.sql from the repository instead.';
+          btn.disabled = true;
+        });
+      btn.addEventListener('click', function () {
+        navigator.clipboard.writeText(pre.textContent).then(function () {
+          btn.textContent = 'Copied';
+          setTimeout(function () { btn.textContent = 'Copy'; }, 1500);
+        }, function () {
+          var range = document.createRange();
+          range.selectNodeContents(pre);
+          var sel = window.getSelection();
+          sel.removeAllRanges();
+          sel.addRange(range);
+          btn.textContent = 'Press Ctrl+C';
+        });
+      });
+    })();
+  </script>
+</body>
+</html>

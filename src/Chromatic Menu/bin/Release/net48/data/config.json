@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "passwordHash": "7204f18177c694bff72c8d5e2bb6f7c2283afe92564013e965fbebc8042c1d6c",
+  "passwordHash": "61be55a8e2f6b4e172338bddf184d6dbee29c98853e0a0485ecee7f27b9af0b4",
   "mustChangePassword": false,
   "branding": {
     "shopName": "PisoNet",
@@ -43,66 +43,5 @@
       "icon": "layout-grid"
     }
   ],
-  "items": [
-    {
-      "id": "9c956dc7ddf445ad8e89d31dee8967bc",
-      "tabId": "lan-games",
-      "order": 0,
-      "name": "notepad",
-      "kind": "exe",
-      "target": "%SystemRoot%\\notepad.exe",
-      "arguments": "",
-      "workingDirectory": "%SystemRoot%",
-      "icon": {
-        "source": "auto",
-        "path": null,
-        "index": 0
-      }
-    },
-    {
-      "id": "3250b15e93ed4b19b16dafa3385691c1",
-      "tabId": "lan-games",
-      "order": 1,
-      "name": "cmd",
-      "kind": "exe",
-      "target": "%SystemRoot%\\System32\\cmd.exe",
-      "arguments": "",
-      "workingDirectory": "%SystemRoot%\\System32",
-      "icon": {
-        "source": "auto",
-        "path": null,
-        "index": 0
-      }
-    },
-    {
-      "id": "c83f310cfa4b496fbf08467d5d7da90c",
-      "tabId": "lan-games",
-      "order": 2,
-      "name": "notepad",
-      "kind": "exe",
-      "target": "%SystemRoot%\\notepad.exe",
-      "arguments": "",
-      "workingDirectory": "%SystemRoot%",
-      "icon": {
-        "source": "auto",
-        "path": null,
-        "index": 0
-      }
-    },
-    {
-      "id": "48e5c361e45c40e49ab7dc5bdbb8f71b",
-      "tabId": "lan-games",
-      "order": 3,
-      "name": "cmd",
-      "kind": "exe",
-      "target": "%SystemRoot%\\System32\\cmd.exe",
-      "arguments": "",
-      "workingDirectory": "%SystemRoot%\\System32",
-      "icon": {
-        "source": "auto",
-        "path": null,
-        "index": 0
-      }
-    }
-  ]
+  "items": []
 }

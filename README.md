@@ -33,6 +33,11 @@ Built with C# and WPF on .NET Framework 4.8, Chromatic Menu provides an organize
 - **Live Hardware Stats**: Real-time polling of CPU model, active GPU, RAM usage, storage volume capacities, local IP address, and system uptime.
 - **Technical Tool Shortcuts**: One-click access to Windows built-in diagnostic utilities (Task Manager, Device Manager, Network Connections, DirectX Diagnostic Tool, Volume Control).
 
+### Telemetry & Online Dashboard (v1.0.4)
+- **PC Heartbeats**: A background Windows service (`ChromaticTelemetry`) reports, once a minute, whether each PC is on and which program is in use, to your own Supabase project.
+- **Web Dashboard**: A static site (GitHub Pages) with live PC status, a per-day on/off timeline, most-used programs, busy hours, and estimated revenue at ₱1 per 9 active minutes.
+- **Request a Game**: Customers can ask for a new game from the Technical Tools panel; requests appear in the dashboard.
+
 ### Themes & Customization
 - **Modern Dark & Light Themes**: Polished themes with custom transparency and glass-inspired styling.
 - **Color Palettes**: Curated accent colors (Sky Blue, Indigo, Emerald, Amber, Rose, Purple, Cyan, Orange) plus hex inputs for custom backgrounds, surfaces, and text.
@@ -66,6 +71,10 @@ Chromatic Menu/
 │   └── Release/
 │       ├── ChromaticMenu-Setup.msi    # Generated WiX v4 installer
 │       └── Uninstall.exe              # Self-relocating uninstaller helper
+├── docs/                              # GitHub Pages dashboard website
+│   ├── index.html, setup.html
+│   └── supabase/schema.sql            # Database schema for the dashboard
+├── documentation/                     # DEPLOYMENT.md, TELEMETRY-SPEC.md
 ├── installer/
 │   ├── ChromaticMenu.wxs              # WiX v4 setup definition
 │   ├── UninstallHelper.cs             # Standalone uninstaller source
@@ -80,6 +89,10 @@ Chromatic Menu/
 │       ├── Services/                  # Business logic (DeepFreeze, Update, Config, Launch)
 │       ├── ViewModels/                # MainViewModel & ProgramItemViewModel
 │       └── Views/                     # MainWindow.xaml & MainWindow.xaml.cs
+│   ├── ChromaticTelemetry/            # Telemetry Windows service
+│   └── Shared/                        # Code linked into both projects
+├── tools/
+│   └── ChromaticMenu-DataTool.bat     # Backup/restore for the 1.0.3 -> 1.0.4 upgrade
 ├── build-msi.ps1                      # Automated build and MSI generation script
 └── README.md
 ```
@@ -112,7 +125,7 @@ To build a specific release version (e.g. `1.0.1`):
 .\build-msi.ps1 -Version "1.0.1"
 ```
 The script will:
-1. Compile the project stamped with the specified version.
+1. Compile the launcher and the `ChromaticTelemetry` service, stamped with the specified version.
 2. Compile the standalone `Uninstall.exe` helper.
 3. Build the setup package via WiX v4 at `bin\Release\ChromaticMenu-Setup.msi`.
 
@@ -122,7 +135,7 @@ The script will:
 
 ### Interactive Setup
 Double-click `ChromaticMenu-Setup.msi` to run the setup wizard:
-1. **Default Target**: Installs to `C:\Program Files (x86)\Chromatic Menu\`.
+1. **Default Target**: Installs to `C:\Program Files\Chromatic Menu\`.
 2. **Shortcuts**: Automatically creates Desktop and Start Menu (`Programs > Chromatic Menu`) shortcuts.
 3. **Permissions**: Sets up the writable runtime folders (`data\`, `data\assets\`, `data\logs\`).
 
@@ -133,12 +146,40 @@ msiexec.exe /i "ChromaticMenu-Setup.msi" /qn
 ```
 
 ### Complete Uninstallation
-Uninstalling completely cleans up all files, including runtime data, logs, and icons:
+Uninstalling through the uninstall helper removes the service and all files, including runtime data, logs, and icons:
 - **Via Start Menu**: Click `Start Menu > Chromatic Menu > Uninstall Chromatic Menu`.
-- **Via Folder**: Run `C:\Program Files (x86)\Chromatic Menu\Uninstall.exe`.
-- **Via Windows Settings**: Select `Chromatic Menu` in **Installed Apps** and click **Uninstall**.
+- **Via Folder**: Run `C:\Program Files\Chromatic Menu\Uninstall.exe`.
+
+Uninstalling from **Windows Settings > Installed Apps** removes the program and the service but keeps the `data` folder (programs, tabs, icons). Since v1.0.4 the installer itself never deletes `data`, so updates always keep the shop's configuration.
+
+### Upgrading from v1.0.3
+The v1.0.3 installer deletes the `data` folder when it is removed, and an update removes it. For this one upgrade, back up first on each PC (booted Thawed):
+1. Run `tools\ChromaticMenu-DataTool.bat` and choose **[0] Backup**.
+2. Update through **Settings > About > Check for Updates**.
+3. Run the tool again and choose **[1] Restore**.
+
+Later updates (1.0.4 and newer) keep the data without the tool.
 
 ---
+
+## Telemetry & Dashboard
+
+### What is sent
+When **Start with Windows** (Settings > General) and **telemetry** (Settings > Telemetry) are both on, the `ChromaticTelemetry` service sends one heartbeat per interval (default 60 seconds) with:
+- the time, the PC name, the shop name, the heartbeat interval, and
+- the name of the program in the foreground (for example `Google Chrome`). Built-in Windows programs are reported as `Windows`; the launcher and the desktop as `Chromatic Menu`.
+
+**Never sent:** window titles, file paths, Windows usernames, IP or MAC addresses, or hardware IDs. If the internet is down, heartbeats wait in memory (never on disk) and are sent together when it returns.
+
+### Turning it off
+Open **Settings > Telemetry** and untick **Enable telemetry**, or turn off **Start with Windows**. The change applies within seconds; no restart or admin rights are needed. The Request a Game button is hidden while telemetry is off.
+
+### Setting up Supabase and the dashboard
+1. Follow the setup guide in [`docs/setup.html`](docs/setup.html) (also available on the deployed site): create a Supabase project, run [`docs/supabase/schema.sql`](docs/supabase/schema.sql), turn off public sign-ups, and create a dashboard user.
+2. Deploy the dashboard: in the GitHub repository, open **Settings > Pages**, choose **Deploy from a branch**, branch `main`, folder `/docs`.
+3. Open the site, enter the Supabase URL and anon key, and sign in. The session stays on that browser until you log out.
+
+Only the **anon / public** key is ever used. Row Level Security lets it add rows but never read them.
 
 ## Publishing Updates
 

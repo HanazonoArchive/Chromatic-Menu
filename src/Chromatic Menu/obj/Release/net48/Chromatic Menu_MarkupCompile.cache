@@ -1,5 +1,5 @@
 ﻿Chromatic Menu
-1.0.2.0
+1.0.4.0
 
 winexe
 C#
@@ -12,8 +12,8 @@ TRACE;RELEASE;NETFRAMEWORK;NET48;NET30_OR_GREATER;NET35_OR_GREATER;NET40_OR_GREA
 C:\Users\Hanazono Archive\Desktop\Chromatic Menu\src\Chromatic Menu\App.xaml
 51250042642
 
-30-234858974
-131-694454066
+361379466588
+132797178525
 Resources\Icons\LucideIcons.xaml;Resources\Styles\Controls.xaml;Resources\Themes\DarkTheme.xaml;Resources\Themes\LightTheme.xaml;Views\MainWindow.xaml;
 
 False

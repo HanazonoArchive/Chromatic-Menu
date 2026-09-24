@@ -1191,6 +1191,15 @@
                                     <TextBlock Text="Backup" FontWeight="SemiBold" FontSize="13" VerticalAlignment="Center" />
                                 </StackPanel>
                             </Button>
+                            <!-- 6: Telemetry -->
+                            <Button Style="{StaticResource SettingsNavButtonStyle}"
+                                    Command="{Binding SelectSettingsPageCommand}" CommandParameter="6"
+                                    Tag="{Binding SettingsPageIndex, Converter={StaticResource EqToBool}, ConverterParameter=6}">
+                                <StackPanel Orientation="Horizontal">
+                                    <controls:LucideIcon Icon="activity" Width="15" Height="15" Margin="0,0,10,0" />
+                                    <TextBlock Text="Telemetry" FontWeight="SemiBold" FontSize="13" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
                             <!-- 5: About -->
                             <Button Style="{StaticResource SettingsNavButtonStyle}"
                                     Command="{Binding SelectSettingsPageCommand}" CommandParameter="5"
@@ -1608,6 +1617,147 @@
                                                Visibility="{Binding BackupErrorMessage, Converter={StaticResource BoolToVis}}" />
                                 </StackPanel>
 
+                                <!-- PAGE 6: TELEMETRY -->
+                                <StackPanel Visibility="{Binding SettingsPageIndex, Converter={StaticResource EqToVis}, ConverterParameter=6}">
+                                    <TextBlock Text="Telemetry" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource Brush.TextPrimary}" Margin="0,0,0,6" />
+                                    <TextBlock Text="Sends a small heartbeat to your Supabase project so the dashboard can show which PCs are on and which program is in use."
+                                               FontSize="12" Foreground="{DynamicResource Brush.TextSecondary}" TextWrapping="Wrap" Margin="0,0,0,16" />
+
+                                    <!-- Enable + service status -->
+                                    <Grid Margin="0,0,0,8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <CheckBox IsChecked="{Binding TelemetryEnabled}" FontSize="13" Foreground="{DynamicResource Brush.TextPrimary}" VerticalAlignment="Center">
+                                            <TextBlock Text="Enable telemetry" FontWeight="SemiBold" />
+                                        </CheckBox>
+                                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                            <TextBlock Text="Service:" FontSize="12" Foreground="{DynamicResource Brush.TextSecondary}" VerticalAlignment="Center" Margin="0,0,6,0" />
+                                            <TextBlock Text="{Binding TelemetryServiceStatus}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextPrimary}" VerticalAlignment="Center" Margin="0,0,6,0" />
+                                            <Button Style="{StaticResource IconButtonStyle}" Command="{Binding RefreshTelemetryStatusCommand}" ToolTip="Refresh service status">
+                                                <controls:LucideIcon Icon="refresh-cw" Width="13" Height="13" />
+                                            </Button>
+                                        </StackPanel>
+                                    </Grid>
+
+                                    <!-- Start with Windows requirement -->
+                                    <Border Background="{DynamicResource Brush.SurfaceHover}" BorderBrush="{DynamicResource Brush.Border}"
+                                            BorderThickness="1" CornerRadius="4" Padding="10,8" Margin="0,0,0,16">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+                                            <controls:LucideIcon Icon="info" Width="15" Height="15" Foreground="{DynamicResource Brush.Accent}" Margin="0,0,8,0" VerticalAlignment="Top" />
+                                            <StackPanel Grid.Column="1">
+                                                <TextBlock Text="Heartbeats are only sent when Start with Windows (General tab) is also enabled."
+                                                           FontSize="11.5" Foreground="{DynamicResource Brush.TextSecondary}" TextWrapping="Wrap" />
+                                                <TextBlock Text="Start with Windows is currently off, so this PC sends nothing."
+                                                           FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource Brush.Warning}" TextWrapping="Wrap" Margin="0,4,0,0"
+                                                           Visibility="{Binding StartWithWindows, Converter={StaticResource InverseBoolToVis}}" />
+                                            </StackPanel>
+                                        </Grid>
+                                    </Border>
+
+                                    <!-- Supabase URL -->
+                                    <TextBlock Text="Supabase Project URL" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextSecondary}" Margin="0,0,0,4" />
+                                    <Grid Margin="0,0,0,12">
+                                        <TextBox x:Name="TelemetryUrlBox" Text="{Binding TelemetryUrlInput, UpdateSourceTrigger=PropertyChanged}"
+                                                 FontSize="13" Padding="8,6" Background="{DynamicResource Brush.Background}"
+                                                 Foreground="{DynamicResource Brush.TextPrimary}" BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1" />
+                                        <TextBlock Text="{Binding DefaultSupabaseUrl, StringFormat='Default: {0}'}" IsHitTestVisible="False"
+                                                   FontSize="12.5" Foreground="{DynamicResource Brush.TextSecondary}" Opacity="0.7"
+                                                   Margin="10,0,0,0" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
+                                                   Visibility="{Binding TelemetryUrlInput, Converter={StaticResource NotNullToVis}}" />
+                                    </Grid>
+
+                                    <!-- Anon key -->
+                                    <Grid Margin="0,0,0,4">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="Supabase anon (public) key" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextSecondary}" />
+                                        <CheckBox x:Name="ShowTelemetryKeyCheckBox" Grid.Column="1" FontSize="11.5" Foreground="{DynamicResource Brush.TextSecondary}">
+                                            <TextBlock Text="Show key" />
+                                        </CheckBox>
+                                    </Grid>
+                                    <Grid Margin="0,0,0,4">
+                                        <PasswordBox x:Name="TelemetryKeyPasswordBox" FontSize="13" Padding="8,6"
+                                                     Background="{DynamicResource Brush.Background}" Foreground="{DynamicResource Brush.TextPrimary}"
+                                                     BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1" PasswordChar="&#x25CF;"
+                                                     PasswordChanged="TelemetryKeyPasswordBox_PasswordChanged"
+                                                     Visibility="{Binding IsChecked, ElementName=ShowTelemetryKeyCheckBox, Converter={StaticResource InverseBoolToVis}}" />
+                                        <TextBox Text="{Binding TelemetryKeyInput, UpdateSourceTrigger=PropertyChanged}"
+                                                 FontSize="12" Padding="8,6" Background="{DynamicResource Brush.Background}"
+                                                 Foreground="{DynamicResource Brush.TextPrimary}" BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1"
+                                                 Visibility="{Binding IsChecked, ElementName=ShowTelemetryKeyCheckBox, Converter={StaticResource BoolToVis}}" />
+                                        <TextBlock Text="Default key" IsHitTestVisible="False" FontSize="12.5" Foreground="{DynamicResource Brush.TextSecondary}" Opacity="0.7"
+                                                   Margin="10,0,0,0" VerticalAlignment="Center"
+                                                   Visibility="{Binding TelemetryKeyInput, Converter={StaticResource NotNullToVis}}" />
+                                    </Grid>
+                                    <TextBlock Text="Leave the URL and key empty to use the built-in defaults. Never use the service_role key."
+                                               FontSize="11.5" Foreground="{DynamicResource Brush.TextSecondary}" TextWrapping="Wrap" Margin="0,0,0,12" />
+
+                                    <!-- Interval -->
+                                    <TextBlock Text="Heartbeat interval (seconds)" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextSecondary}" Margin="0,0,0,4" />
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                                        <TextBox Text="{Binding TelemetryIntervalInput, UpdateSourceTrigger=PropertyChanged}" Width="90"
+                                                 FontSize="13" Padding="8,6" Background="{DynamicResource Brush.Background}"
+                                                 Foreground="{DynamicResource Brush.TextPrimary}" BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1" />
+                                        <TextBlock Text="{Binding TelemetryIntervalRangeText, StringFormat='Allowed: {0}. Default: 60.'}"
+                                                   FontSize="11.5" Foreground="{DynamicResource Brush.TextSecondary}" VerticalAlignment="Center" Margin="10,0,0,0" />
+                                    </StackPanel>
+
+                                    <!-- Actions -->
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                                        <Button Content="Save" Style="{StaticResource BaseButtonStyle}"
+                                                Background="{DynamicResource Brush.Accent}" Foreground="#FFFFFF" BorderThickness="0"
+                                                Padding="16,7" Margin="0,0,8,0" Command="{Binding ApplyTelemetrySettingsCommand}" />
+                                        <Button Style="{StaticResource BaseButtonStyle}" Padding="12,7" Margin="0,0,8,0"
+                                                Command="{Binding TestTelemetryConnectionCommand}"
+                                                IsEnabled="{Binding IsTestingTelemetry, Converter={StaticResource InverseBool}}">
+                                            <StackPanel Orientation="Horizontal">
+                                                <controls:LucideIcon Icon="network" Width="14" Height="14" Margin="0,0,6,0" />
+                                                <TextBlock Text="Test connection" VerticalAlignment="Center" />
+                                            </StackPanel>
+                                        </Button>
+                                        <Button Content="Reset to default" Style="{StaticResource BaseButtonStyle}" Padding="12,7"
+                                                Command="{Binding ResetTelemetryDefaultsCommand}" />
+                                    </StackPanel>
+                                    <TextBlock Text="{Binding TelemetrySettingsError}" Foreground="{DynamicResource Brush.Danger}" FontSize="12" TextWrapping="Wrap" Margin="0,0,0,4"
+                                               Visibility="{Binding TelemetrySettingsError, Converter={StaticResource BoolToVis}}" />
+                                    <TextBlock Text="{Binding TelemetrySettingsMessage}" Foreground="{DynamicResource Brush.Accent}" FontSize="12" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,0,0,4"
+                                               Visibility="{Binding TelemetrySettingsMessage, Converter={StaticResource BoolToVis}}" />
+                                    <TextBlock Text="{Binding TelemetryTestResult}" FontSize="12" TextWrapping="Wrap" Margin="0,0,0,4"
+                                               Visibility="{Binding TelemetryTestResult, Converter={StaticResource BoolToVis}}">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Foreground" Value="{DynamicResource Brush.TextSecondary}" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding TelemetryTestOk}" Value="True">
+                                                        <Setter Property="Foreground" Value="{DynamicResource Brush.Accent}" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+
+                                    <!-- Privacy note -->
+                                    <Border Background="{DynamicResource Brush.Background}" BorderBrush="{DynamicResource Brush.Border}"
+                                            BorderThickness="1" CornerRadius="6" Padding="12" Margin="0,12,0,0">
+                                        <StackPanel>
+                                            <TextBlock Text="What is sent" FontSize="12.5" FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextPrimary}" Margin="0,0,0,4" />
+                                            <TextBlock Text="Time, PC name, shop name, the name of the program in use (for example Google Chrome), and the heartbeat interval. Game requests also send the title and description the customer typed."
+                                                       FontSize="11.5" Foreground="{DynamicResource Brush.TextSecondary}" TextWrapping="Wrap" Margin="0,0,0,8" />
+                                            <TextBlock Text="Never sent" FontSize="12.5" FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextPrimary}" Margin="0,0,0,4" />
+                                            <TextBlock Text="Window titles, file paths, Windows usernames, IP or MAC addresses, and hardware IDs."
+                                                       FontSize="11.5" Foreground="{DynamicResource Brush.TextSecondary}" TextWrapping="Wrap" />
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+
                                 <!-- PAGE 5: ABOUT -->
                                 <StackPanel Visibility="{Binding SettingsPageIndex, Converter={StaticResource EqToVis}, ConverterParameter=5}">
                                     <TextBlock Text="About Chromatic Menu" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource Brush.TextPrimary}" Margin="0,0,0,6" />
@@ -1978,7 +2128,7 @@
                             CornerRadius="{DynamicResource Radius.Sm}"
                             Padding="10,8"
                             Margin="0,0,0,16"
-                            Visibility="{Binding IsDeepFreezeInstalled, Converter={StaticResource BoolToVis}}">
+                            Visibility="{Binding ShowDialogDeepFreezeBanner, Converter={StaticResource BoolToVis}}">
                         <StackPanel Orientation="Horizontal">
                             <controls:LucideIcon Icon="shield-alert" Width="16" Height="16"
                                                 Foreground="{DynamicResource Brush.Warning}"
@@ -2139,6 +2289,48 @@
                                    TextWrapping="Wrap" />
                     </StackPanel>
 
+                    <!-- Content 8: Request a Game Dialog -->
+                    <StackPanel Grid.Row="2" Visibility="{Binding IsRequestGameDialogVisible, Converter={StaticResource BoolToVis}}" Margin="0,0,0,20">
+                        <TextBlock Text="Tell the shop which game you would like to play on this PC."
+                                   Foreground="{DynamicResource Brush.TextSecondary}" FontSize="12.5" TextWrapping="Wrap" Margin="0,0,0,12" />
+
+                        <Grid Margin="0,0,0,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Game title" Foreground="{DynamicResource Brush.TextSecondary}" FontSize="12" />
+                            <TextBlock Grid.Column="1" Text="{Binding GameTitleCounter}" Foreground="{DynamicResource Brush.TextSecondary}" FontSize="11" />
+                        </Grid>
+                        <TextBox x:Name="GameTitleBox"
+                                 Text="{Binding GameRequestTitle, UpdateSourceTrigger=PropertyChanged}"
+                                 MaxLength="{Binding GameTitleMaxLength}"
+                                 FontSize="13" Padding="8,6" Background="{DynamicResource Brush.Background}"
+                                 Foreground="{DynamicResource Brush.TextPrimary}" BorderBrush="{DynamicResource Brush.Border}"
+                                 BorderThickness="1" Margin="0,0,0,12" />
+
+                        <Grid Margin="0,0,0,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Details (optional)" Foreground="{DynamicResource Brush.TextSecondary}" FontSize="12" />
+                            <TextBlock Grid.Column="1" Text="{Binding GameDescriptionCounter}" Foreground="{DynamicResource Brush.TextSecondary}" FontSize="11" />
+                        </Grid>
+                        <TextBox Text="{Binding GameRequestDescription, UpdateSourceTrigger=PropertyChanged}"
+                                 MaxLength="{Binding GameDescriptionMaxLength}"
+                                 AcceptsReturn="True" TextWrapping="Wrap" Height="96"
+                                 VerticalContentAlignment="Top"
+                                 VerticalScrollBarVisibility="Auto"
+                                 FontSize="13" Padding="8,6" Background="{DynamicResource Brush.Background}"
+                                 Foreground="{DynamicResource Brush.TextPrimary}" BorderBrush="{DynamicResource Brush.Border}"
+                                 BorderThickness="1" />
+
+                        <TextBlock Text="{Binding GameRequestError}"
+                                   Foreground="{DynamicResource Brush.Danger}" FontSize="12" TextWrapping="Wrap" Margin="0,8,0,0"
+                                   Visibility="{Binding GameRequestError, Converter={StaticResource BoolToVis}}" />
+                    </StackPanel>
+
                     <!-- Actions Row -->
                     <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right">
                         <!-- Password Submit Button -->
@@ -2195,6 +2387,38 @@
                                 Margin="0,0,8,0"
                                 Command="{Binding SubmitConfirmDeleteCommand}"
                                 Visibility="{Binding IsConfirmDeleteDialogVisible, Converter={StaticResource BoolToVis}}" />
+
+                        <!-- Request a Game Send Button -->
+                        <Button Style="{StaticResource BaseButtonStyle}"
+                                Background="{DynamicResource Brush.Accent}"
+                                Foreground="#FFFFFF"
+                                BorderThickness="0"
+                                Padding="16,8"
+                                Margin="0,0,8,0"
+                                Command="{Binding SubmitGameRequestCommand}"
+                                IsEnabled="{Binding IsSendingGameRequest, Converter={StaticResource InverseBool}}"
+                                Visibility="{Binding IsRequestGameDialogVisible, Converter={StaticResource BoolToVis}}">
+                            <TextBlock>
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Text" Value="Send Request" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsSendingGameRequest}" Value="True">
+                                                <Setter Property="Text" Value="Sending..." />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </Button>
+
+                        <!-- Cancel Button for Request a Game -->
+                        <Button Content="Cancel"
+                                Style="{StaticResource BaseButtonStyle}"
+                                Padding="14,8"
+                                Margin="0,0,8,0"
+                                Command="{Binding CloseModalCommand}"
+                                Visibility="{Binding IsRequestGameDialogVisible, Converter={StaticResource BoolToVis}}" />
 
                         <!-- Cancel Button (for password dialogs) -->
                         <Button Content="Cancel"

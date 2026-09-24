@@ -1,0 +1,12 @@
+C:\Users\Hanazono Archive\Desktop\Chromatic Menu\src\ChromaticTelemetry\bin\Release\net48\ChromaticTelemetry.exe.config
+C:\Users\Hanazono Archive\Desktop\Chromatic Menu\src\ChromaticTelemetry\bin\Release\net48\ChromaticTelemetry.exe
+C:\Users\Hanazono Archive\Desktop\Chromatic Menu\src\ChromaticTelemetry\bin\Release\net48\ChromaticTelemetry.pdb
+C:\Users\Hanazono Archive\Desktop\Chromatic Menu\src\ChromaticTelemetry\obj\Release\net48\ChromaticTelemetry.csproj.AssemblyReference.cache
+C:\Users\Hanazono Archive\Desktop\Chromatic Menu\src\ChromaticTelemetry\obj\Release\net48\ChromaticTelemetry.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Hanazono Archive\Desktop\Chromatic Menu\src\ChromaticTelemetry\obj\Release\net48\ChromaticTelemetry.AssemblyInfoInputs.cache
+C:\Users\Hanazono Archive\Desktop\Chromatic Menu\src\ChromaticTelemetry\obj\Release\net48\ChromaticTelemetry.AssemblyInfo.cs
+C:\Users\Hanazono Archive\Desktop\Chromatic Menu\src\ChromaticTelemetry\obj\Release\net48\ChromaticTelemetry.csproj.CoreCompileInputs.cache
+C:\Users\Hanazono Archive\Desktop\Chromatic Menu\src\ChromaticTelemetry\obj\Release\net48\ChromaticTelemetry.sourcelink.json
+C:\Users\Hanazono Archive\Desktop\Chromatic Menu\src\ChromaticTelemetry\obj\Release\net48\ChromaticTelemetry.csproj.Fody.CopyLocal.cache
+C:\Users\Hanazono Archive\Desktop\Chromatic Menu\src\ChromaticTelemetry\obj\Release\net48\ChromaticTelemetry.exe
+C:\Users\Hanazono Archive\Desktop\Chromatic Menu\src\ChromaticTelemetry\obj\Release\net48\ChromaticTelemetry.pdb

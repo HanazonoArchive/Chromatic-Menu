@@ -37,6 +37,8 @@ namespace ChromaticMenu.Views
 
             _viewModel.OnFocusPasswordInput = FocusPasswordBox;
             _viewModel.OnFocusNewPasswordInput = FocusNewPasswordBox;
+            _viewModel.PropertyChanged += ViewModel_PropertyChanged;
+            TelemetryKeyPasswordBox.Password = _viewModel.TelemetryKeyInput ?? string.Empty;
             MainViewModel.GetSelectedItems = () => ProgramGridListBox.SelectedItems.OfType<ProgramItemViewModel>().ToList();
 
             PreviewKeyDown += MainWindow_PreviewKeyDown;
@@ -168,8 +170,18 @@ namespace ChromaticMenu.Views
                 }
                 else if (e.Key == Key.Enter)
                 {
+                    // The details box is multiline, so Enter there must insert a new line.
+                    if (_viewModel.IsRequestGameDialogVisible && !GameTitleBox.IsKeyboardFocusWithin)
+                    {
+                        return;
+                    }
+
                     e.Handled = true;
-                    if (_viewModel.IsPasswordDialogVisible)
+                    if (_viewModel.IsRequestGameDialogVisible)
+                    {
+                        _viewModel.SubmitGameRequestCommand.Execute(null);
+                    }
+                    else if (_viewModel.IsPasswordDialogVisible)
                     {
                         SubmitPassword_Click(sender, e);
                     }
@@ -546,6 +558,31 @@ namespace ChromaticMenu.Views
                     e.Handled = true;
                     _viewModel.LaunchItemCommand.Execute(vm);
                 }
+            }
+        }
+
+        private void ViewModel_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(MainViewModel.TelemetryKeyInput))
+            {
+                string key = _viewModel.TelemetryKeyInput ?? string.Empty;
+                if (TelemetryKeyPasswordBox.Password != key)
+                {
+                    TelemetryKeyPasswordBox.Password = key;
+                }
+            }
+            else if (e.PropertyName == nameof(MainViewModel.IsRequestGameDialogVisible) && _viewModel.IsRequestGameDialogVisible)
+            {
+                Dispatcher.InvokeAsync(() => GameTitleBox.Focus(), DispatcherPriority.Input);
+            }
+        }
+
+        // PasswordBox.Password is not bindable, so the masked key box is synced by hand.
+        private void TelemetryKeyPasswordBox_PasswordChanged(object sender, RoutedEventArgs e)
+        {
+            if (_viewModel != null && _viewModel.TelemetryKeyInput != TelemetryKeyPasswordBox.Password)
+            {
+                _viewModel.TelemetryKeyInput = TelemetryKeyPasswordBox.Password;
             }
         }
 

@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using ChromaticMenu.Models;
+using ChromaticMenu.Shared;
 using Newtonsoft.Json;
 
 namespace ChromaticMenu.Services
@@ -154,7 +155,11 @@ namespace ChromaticMenu.Services
                         var loaded = JsonConvert.DeserializeObject<AppConfig>(json);
                         if (loaded != null)
                         {
-                            Current = Migrate(loaded);
+                            Current = loaded;
+                            if (Migrate(Current))
+                            {
+                                Save(Current);
+                            }
                             return Current;
                         }
                         LoggerService.Instance.Warn("Config file was empty or deserialized to null. Attempting backup restore.");
@@ -175,7 +180,8 @@ namespace ChromaticMenu.Services
                         if (backupConfig != null)
                         {
                             LoggerService.Instance.Info("Restoring config from config.json.bak.");
-                            Current = Migrate(backupConfig);
+                            Current = backupConfig;
+                            Migrate(Current);
                             Save(Current);
                             return Current;
                         }
@@ -300,13 +306,23 @@ namespace ChromaticMenu.Services
             }
         }
 
-        private AppConfig Migrate(AppConfig config)
+        // Only ever adds what an older config lacks; existing tabs, items,
+        // branding, appearance and password are left exactly as they were.
+        private static bool Migrate(AppConfig config)
         {
-            if (config.Version < 1)
+            if (config.Version >= AppConfig.CurrentVersion && config.Telemetry != null)
             {
-                config.Version = 1;
+                return false;
             }
-            return config;
+
+            if (config.Telemetry == null)
+            {
+                config.Telemetry = new TelemetrySettings();
+            }
+            int from = config.Version;
+            config.Version = AppConfig.CurrentVersion;
+            LoggerService.Instance.Info($"Migrated config from version {from} to {AppConfig.CurrentVersion}.");
+            return true;
         }
     }
 }

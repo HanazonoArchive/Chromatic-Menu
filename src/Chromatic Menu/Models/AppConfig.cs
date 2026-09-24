@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using ChromaticMenu.Shared;
 using Newtonsoft.Json;
 
 namespace ChromaticMenu.Models
@@ -53,8 +54,10 @@ namespace ChromaticMenu.Models
 
     public class AppConfig
     {
+        public const int CurrentVersion = 2;
+
         [JsonProperty("version")]
-        public int Version { get; set; } = 1;
+        public int Version { get; set; } = CurrentVersion;
 
         [JsonProperty("passwordHash")]
         public string PasswordHash { get; set; } = "8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918"; // default "admin"
@@ -76,6 +79,9 @@ namespace ChromaticMenu.Models
 
         [JsonProperty("items")]
         public List<ProgramItem> Items { get; set; } = new List<ProgramItem>();
+
+        [JsonProperty("telemetry")]
+        public TelemetrySettings Telemetry { get; set; } = new TelemetrySettings();
 
         public static AppConfig CreateDefault()
         {

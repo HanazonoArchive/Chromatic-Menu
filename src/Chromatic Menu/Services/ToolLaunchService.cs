@@ -10,6 +10,9 @@ namespace ChromaticMenu.Services
         private static ToolLaunchService _instance;
         public static ToolLaunchService Instance => _instance ?? (_instance = new ToolLaunchService());
 
+        public static TechnicalToolModel RequestGameTool { get; } =
+            TechnicalToolModel.InApp("Request a Game", "message-square", ToolAction.RequestGame, "Ask the shop to add a game");
+
         public List<TechnicalToolModel> GetDefaultTools()
         {
             return new List<TechnicalToolModel>

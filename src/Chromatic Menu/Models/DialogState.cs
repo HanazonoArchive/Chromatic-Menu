@@ -12,6 +12,7 @@ namespace ChromaticMenu.Models
         EditDetails,
         ConfirmDelete,
         TabDeletePrompt,
-        IconPicker
+        IconPicker,
+        RequestGame
     }
 }

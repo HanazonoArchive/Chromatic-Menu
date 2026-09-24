@@ -10,16 +10,21 @@ namespace ChromaticMenu.Services
         private static LoggerService _instance;
         public static LoggerService Instance => _instance ?? (_instance = new LoggerService());
 
+        private readonly string _fileBaseName;
         private string _logDirectory;
         private string _logFilePath;
         private const long MaxLogFileSizeBytes = 1024 * 1024; // 1 MB
-        private const int MaxBackupFiles = 3;
 
         public string LogDirectory => _logDirectory;
         public string LogFilePath => _logFilePath;
 
-        public LoggerService()
+        public LoggerService() : this("launcher")
         {
+        }
+
+        public LoggerService(string fileBaseName)
+        {
+            _fileBaseName = fileBaseName;
             SetDirectory(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "data", "logs"));
         }
 
@@ -35,7 +40,7 @@ namespace ChromaticMenu.Services
         private void SetDirectory(string dir)
         {
             _logDirectory = dir;
-            _logFilePath = Path.Combine(_logDirectory, "launcher.log");
+            _logFilePath = Path.Combine(_logDirectory, _fileBaseName + ".log");
         }
 
         public void Info(string message) => Log("INFO", message, null);
@@ -84,9 +89,9 @@ namespace ChromaticMenu.Services
 
             try
             {
-                // Rotating: launcher.2.log -> deleted, launcher.1.log -> launcher.2.log, launcher.log -> launcher.1.log
-                string backup2 = Path.Combine(_logDirectory, "launcher.2.log");
-                string backup1 = Path.Combine(_logDirectory, "launcher.1.log");
+                // Rotating: name.2.log -> deleted, name.1.log -> name.2.log, name.log -> name.1.log
+                string backup2 = Path.Combine(_logDirectory, _fileBaseName + ".2.log");
+                string backup1 = Path.Combine(_logDirectory, _fileBaseName + ".1.log");
 
                 if (File.Exists(backup2))
                 {

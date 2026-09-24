@@ -13,7 +13,7 @@ You are building **Chromatic Menu**, a native Windows desktop launcher for coin-
 
 - **Windows 10 only** (primary target: 22H2, build 19045). Everything must run on a stock Windows 10 install with nothing to install.
 - **C# + WPF on .NET Framework 4.8** (already included in Windows 10). Use an SDK-style `.csproj` targeting `net48`. Do not target .NET 6/7/8. Do not use WinUI, MAUI, Electron, WebView or Tauri.
-- **Output is a single `.exe`** that can be copied to another PC and run alone. Allowed NuGet packages: `Newtonsoft.Json` and `Costura.Fody` (to embed DLLs), and nothing else without asking me first. If Costura does not work with the current SDK, tell me and propose the smallest alternative.
+- **Output is a single `.exe`** that can be copied to another PC and run alone. Allowed NuGet packages: `Newtonsoft.Json` and `Costura.Fody` (to embed DLLs), and nothing else without asking me first. Framework assemblies such as `System.Net.Http` and `System.ServiceProcess` are allowed. If Costura does not work with the current SDK, tell me and propose the smallest alternative.
 - Must run well on low-spec PCs (4 GB RAM, old dual-core CPUs, 1366x768 monitors). Targets: under 150 MB RAM, near 0% idle CPU, window visible within 3 seconds of launch.
 - App manifest: `requestedExecutionLevel = asInvoker`, `PerMonitorV2` DPI awareness, Windows 10 `supportedOS` entry (so OS APIs do not lie about the version).
 - Language: **English only**. No localization framework.
@@ -49,6 +49,7 @@ The goal is a clean, modern, restrained look that does **not** look AI-generated
 - **Alt+F4 only minimizes** (handle it in `PreviewKeyDown`). Do **not** cancel `Closing`, because closing from the taskbar's right-click menu, Task Manager, and Windows shutdown/restart/logoff must work normally (`SessionEnding` is never blocked).
 - Once minimized, the launcher stays minimized until the user brings it back (Alt+Tab or the taskbar). It never restores itself.
 - **Launching a program does not change the launcher.** No minimizing, no topmost, no focus stealing, no hooks, no process tracking, no "bring launcher back when the game closes". The launcher behaves like any normal Windows program.
+  - Exception: the telemetry reporter (section 17) reads the foreground program's name every few seconds. It never tracks, hooks, or controls processes.
 - Clicking a program that is already running simply starts another instance, exactly as Windows does. The launcher does nothing special.
 - **Single instance:** a named mutex. A second launch of the launcher restores and activates the existing window, then exits.
 - Every program is an independent shortcut. Steam, Epic and similar are just programs; games inside them are not tracked. LAN games are added as separate entries, one per exe.
@@ -255,13 +256,16 @@ Chromatic Menu/
     Native/         (P/Invoke and COM interop)
     Controls/       (LucideIcon, ColorPicker, ...)
     Resources/      (Themes, Icons/LucideIcons.xaml, Styles)
-  tools/            (svg-to-xaml converter, hash-password.ps1, svg/)
-  docs/DEPLOYMENT.md
+  src/ChromaticTelemetry/  (Windows service: heartbeat sender, named pipe server)
+  src/Shared/       (files linked into both projects: telemetry defaults, pipe message)
+  tools/            (svg-to-xaml converter, hash-password.ps1, ChromaticMenu-DataTool.bat, svg/)
+  docs/             (GitHub Pages dashboard website + docs/supabase/schema.sql)
+  documentation/    (DEPLOYMENT.md, TELEMETRY-SPEC.md)
 ```
 
 ## 15. Out of scope
 
-Coin/timer integration, remaining-time display, user accounts, internet features, auto-update, telemetry, multi-language, touch-specific UI, and any attempt to replace WinLock or Deep Freeze.
+Coin/timer integration, remaining-time display, user accounts, automatic update checks on boot, multi-language, touch-specific UI, and any attempt to replace WinLock or Deep Freeze.
 
 ## 16. Definition of done (applies to every phase)
 
@@ -269,3 +273,14 @@ Coin/timer integration, remaining-time display, user accounts, internet features
 - The phase's acceptance checklist is walked through and each line is reported as verified, not verified (and why), or failing.
 - You list every assumption you made and every file you changed.
 - You **stop** at the end of the phase and wait for me.
+
+## 17. Telemetry & online features (v1.0.4)
+
+Full details: `documentation/TELEMETRY-SPEC.md`. Summary:
+
+- A Windows service, **ChromaticTelemetry** (LocalSystem, automatic start, no UI), sends one heartbeat per interval (default 60 s, configurable 30–600 s) to Supabase: timestamp, PC name, shop name (`branding.shopName`), foreground program name, and interval. It sends only when **Start with Windows** and **telemetry** are both enabled. Failed sends are buffered **in memory only** (max 720 rows) and flushed oldest-first in one batch on the next success.
+- The launcher reports the foreground program's name to the service over the named pipe `ChromaticTelemetry.Pipe`. Built-in Windows programs are reported as `Windows`; the launcher and desktop as `Chromatic Menu`. Window titles, paths, usernames, IPs and hardware IDs are never sent.
+- Settings has a **Telemetry** page (enable, Supabase URL and anon key, interval, test connection, service status). Changes apply through a pipe `reload` message; no admin rights are needed.
+- Technical tools include **Request a Game** (title + description, sent to Supabase, 5-minute cooldown). No password is required.
+- A static dashboard website in `docs/` (GitHub Pages) reads the data through Supabase Auth and RLS-protected RPC functions.
+- Allowed network use: HTTPS to the configured Supabase project, plus the existing GitHub release check.
