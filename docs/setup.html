@@ -3,131 +3,197 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Supabase Setup - Chromatic Menu Dashboard</title>
-  <meta name="description" content="Step-by-step guide to set up Supabase for the Chromatic Menu dashboard.">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%230284c7'/%3E%3Cg fill='none' stroke='white' stroke-width='2'%3E%3Crect x='6' y='6' width='5' height='5' rx='1'/%3E%3Crect x='13' y='6' width='5' height='5' rx='1'/%3E%3Crect x='6' y='13' width='5' height='5' rx='1'/%3E%3Crect x='13' y='13' width='5' height='5' rx='1'/%3E%3C/g%3E%3C/svg%3E">
+  <title>Setup Guide - Chromatic Menu Dashboard</title>
+  <meta name="description" content="Set up Supabase, connect your PCs, and open the Chromatic Menu dashboard.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%230b6fe0'/%3E%3Cg fill='none' stroke='white' stroke-width='2'%3E%3Crect x='6' y='6' width='5' height='5' rx='1'/%3E%3Crect x='13' y='6' width='5' height='5' rx='1'/%3E%3Crect x='6' y='13' width='5' height='5' rx='1'/%3E%3Crect x='13' y='13' width='5' height='5' rx='1'/%3E%3C/g%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="assets/css/app.css">
   <script>
     try { document.documentElement.setAttribute('data-theme', localStorage.getItem('cm.theme') === 'light' ? 'light' : 'dark'); } catch (e) {}
   </script>
 </head>
 <body>
-  <div class="doc">
-    <header>
-      <div class="brand" style="margin:0">
+  <header class="doc-top">
+    <div class="inner">
+      <div class="brand">
         <div class="brand-mark"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg></div>
         <div><div class="brand-name">Chromatic Menu</div><div class="brand-sub">Setup guide</div></div>
       </div>
-      <a class="btn" href="index.html">Open dashboard</a>
-    </header>
-
-    <h1>Set up Supabase for the dashboard</h1>
-    <p class="lead">This takes about ten minutes and is done once. Supabase stores the heartbeats your PCs send and the game requests customers submit. The free plan is enough for a small shop.</p>
-
-    <div class="alert warn" style="margin-bottom:8px">
-      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
-      <div>Only ever use the <b>anon / public</b> key, in Chromatic Menu and in this dashboard. Never paste the <b>service_role</b> key anywhere: it bypasses all security.</div>
+      <div class="spacer"></div>
+      <button class="btn ghost icon-only" id="themeBtn" title="Switch theme" aria-label="Switch theme"></button>
+      <a class="btn primary" href="index.html">Open dashboard
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></a>
     </div>
+  </header>
 
-    <section class="step">
-      <div class="step-num">1</div>
-      <div>
-        <h2>Create a Supabase project</h2>
-        <ol>
-          <li>Go to <a href="https://supabase.com" target="_blank" rel="noopener">supabase.com</a> and sign up for a free account.</li>
-          <li>Click <b>New project</b>. Give it a name (for example <span class="kbd">pisonet</span>), set a database password, and choose the region closest to you (for the Philippines, <b>Southeast Asia (Singapore)</b>).</li>
-          <li>Wait a minute or two while the project is created.</li>
-        </ol>
+  <section class="doc-hero">
+    <span class="eyebrow">One-time setup</span>
+    <h1>Connect your shop to the dashboard</h1>
+    <p>Supabase stores the heartbeats your PCs send and the games customers request. You create the project once, point each PC at it, then open the dashboard from any browser.</p>
+    <div class="facts">
+      <span class="fact"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><b>About 10 minutes</b></span>
+      <span class="fact"><svg class="icon" viewBox="0 0 24 24"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/></svg><b>Free</b> Supabase plan is enough</span>
+      <span class="fact"><svg class="icon" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></svg>Data stays in <b>your</b> project</span>
+    </div>
+  </section>
+
+  <div class="doc-body">
+    <nav class="step-nav" id="stepNav" aria-label="Steps">
+      <span class="eyebrow">Steps</span>
+      <a href="#project"><span class="n">1</span>Create a project</a>
+      <a href="#schema"><span class="n">2</span>Run the schema</a>
+      <a href="#signups"><span class="n">3</span>Lock sign-ups</a>
+      <a href="#login"><span class="n">4</span>Create your login</a>
+      <a href="#keys"><span class="n">5</span>Copy URL and key</a>
+      <a href="#pcs"><span class="n">6</span>Connect each PC</a>
+      <a href="#dashboard"><span class="n">7</span>Open the dashboard</a>
+      <a href="#help"><span class="n">?</span>Troubleshooting</a>
+    </nav>
+
+    <main class="steps">
+      <div class="callout important">
+        <svg class="icon" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+        <div><b>Only ever use the anon / public key.</b>Never paste the <span class="kbd">service_role</span> key into Chromatic Menu, the DataTool, or this dashboard. It bypasses all security.</div>
       </div>
-    </section>
 
-    <section class="step" id="schema">
-      <div class="step-num">2</div>
-      <div>
-        <h2>Run the database schema</h2>
-        <ol>
-          <li>In your project, open <b>SQL Editor</b> from the left menu and click <b>New query</b>.</li>
-          <li>Click <b>Copy</b> below, paste everything into the editor, and click <b>Run</b>.</li>
-          <li>You should see <i>Success</i>. Running it again later is safe; it never deletes your data.</li>
-        </ol>
-        <p>It creates the tables, the security rules (the public key can only add data, never read it), the functions the dashboard uses, and two scheduled jobs that summarise each day and remove raw heartbeats older than 90 days.</p>
-        <div class="code">
-          <button class="btn sm copy" id="copySchema">Copy</button>
-          <pre id="schemaText">Loading schema...</pre>
+      <section class="card step-card" id="project">
+        <div class="card-head"><span class="step-n">1</span><h2>Create a Supabase project</h2><span class="meta">2 min</span></div>
+        <div class="card-body">
+          <ol>
+            <li>Go to <a href="https://supabase.com" target="_blank" rel="noopener">supabase.com</a> and sign up for a free account.</li>
+            <li>Click <b>New project</b>. Name it (for example <span class="kbd">my-shop</span>) and set a database password.</li>
+            <li>Choose the region closest to the shop. For the Philippines: <b>Southeast Asia (Singapore)</b>.</li>
+            <li>Wait a minute or two while the project is created.</li>
+          </ol>
         </div>
-        <p class="hint">The same file is in the repository at <span class="kbd">docs/supabase/schema.sql</span>.</p>
-      </div>
-    </section>
+      </section>
 
-    <section class="step">
-      <div class="step-num">3</div>
-      <div>
-        <h2>Turn off public sign-ups</h2>
-        <p>Only accounts you create yourself should be able to open the dashboard.</p>
-        <ol>
-          <li>Open <b>Authentication</b>, then <b>Sign In / Providers</b>.</li>
-          <li>Turn off <b>Allow new users to sign up</b> and save.</li>
-        </ol>
-      </div>
-    </section>
+      <section class="card step-card" id="schema">
+        <div class="card-head"><span class="step-n">2</span><h2>Run the database schema</h2><span class="meta">1 min</span></div>
+        <div class="card-body">
+          <ol>
+            <li>Open <span class="path"><span>SQL Editor</span><span class="sep">&rsaquo;</span><span>New query</span></span>.</li>
+            <li>Click <b>Copy</b> below, paste everything into the editor, and click <b>Run</b>.</li>
+            <li>You should see <b>Success</b>.</li>
+          </ol>
+          <div class="code">
+            <div class="code-head">
+              <svg class="icon" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5V19A9 3 0 0 0 21 19V5"/><path d="M3 12A9 3 0 0 0 21 12"/></svg>
+              <span class="mono">schema.sql</span><span class="spacer"></span>
+              <button class="btn sm primary" id="copySchema">Copy</button>
+            </div>
+            <pre id="schemaText">Loading schema...</pre>
+          </div>
+          <div class="callout tip">
+            <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+            <div><b>Safe to run again.</b>It never deletes your data. It creates the tables, the security rules (the public key can only add data, never read it), the functions the dashboard uses, and two scheduled jobs: an hourly daily summary, and removal of raw heartbeats older than 90 days.</div>
+          </div>
+        </div>
+      </section>
 
-    <section class="step">
-      <div class="step-num">4</div>
-      <div>
-        <h2>Create your dashboard login</h2>
-        <ol>
-          <li>Open <b>Authentication</b>, then <b>Users</b>, and click <b>Add user</b>, then <b>Create new user</b>.</li>
-          <li>Enter your email and a strong password, and tick <b>Auto Confirm User</b>.</li>
-          <li>Repeat for anyone else who should see the dashboard.</li>
-        </ol>
-      </div>
-    </section>
+      <section class="card step-card" id="signups">
+        <div class="card-head"><span class="step-n">3</span><h2>Turn off public sign-ups</h2><span class="meta">30 sec</span></div>
+        <div class="card-body">
+          <p>Only accounts you create yourself should be able to open the dashboard.</p>
+          <ol>
+            <li>Open <span class="path"><span>Authentication</span><span class="sep">&rsaquo;</span><span>Sign In / Providers</span></span>.</li>
+            <li>Turn <b>off</b> <span class="kbd">Allow new users to sign up</span> and save.</li>
+          </ol>
+        </div>
+      </section>
 
-    <section class="step">
-      <div class="step-num">5</div>
-      <div>
-        <h2>Copy the project URL and anon key</h2>
-        <ol>
-          <li>Open <b>Project Settings</b>, then <b>API</b> (or <b>Data API</b> and <b>API Keys</b>).</li>
-          <li>Copy the <b>Project URL</b>, for example <span class="kbd">https://abcdefgh.supabase.co</span>.</li>
-          <li>Copy the <b>anon</b> / <b>public</b> key (a long text starting with <span class="kbd">eyJ</span>).</li>
-        </ol>
-      </div>
-    </section>
+      <section class="card step-card" id="login">
+        <div class="card-head"><span class="step-n">4</span><h2>Create your dashboard login</h2><span class="meta">1 min</span></div>
+        <div class="card-body">
+          <ol>
+            <li>Open <span class="path"><span>Authentication</span><span class="sep">&rsaquo;</span><span>Users</span><span class="sep">&rsaquo;</span><span>Add user</span><span class="sep">&rsaquo;</span><span>Create new user</span></span>.</li>
+            <li>Enter your email and a strong password, and tick <b>Auto Confirm User</b>.</li>
+            <li>Repeat for anyone else who should see the dashboard.</li>
+          </ol>
+        </div>
+      </section>
 
-    <section class="step">
-      <div class="step-num">6</div>
-      <div>
-        <h2>Connect the PCs and the dashboard</h2>
-        <p><b>On each PC</b> (booted Thawed if Deep Freeze is installed):</p>
-        <ol>
-          <li>Open Chromatic Menu, click <b>Settings</b>, and enter the admin password.</li>
-          <li>In <b>General</b>, make sure <b>Start with Windows</b> is on. Heartbeats are only sent when it is.</li>
-          <li>In <b>Telemetry</b>, keep <b>Enable telemetry</b> on, paste the Project URL and anon key, click <b>Save</b>, then <b>Test connection</b>. Chromatic Menu has no built-in project, so nothing is sent until these are set. Technicians can also set them with option <b>[2] Set up Supabase</b> in <span class="kbd">ChromaticMenu-DataTool.bat</span>.</li>
-          <li>Check that <b>Service</b> shows <b>Running</b>. Then freeze the PC again.</li>
-        </ol>
-        <p><b>In this dashboard:</b> open the <a href="index.html">dashboard</a>, paste the same URL and anon key, and sign in with the account from step 4. You stay signed in on that browser until you log out.</p>
-      </div>
-    </section>
+      <section class="card step-card" id="keys">
+        <div class="card-head"><span class="step-n">5</span><h2>Copy the Project URL and anon key</h2><span class="meta">30 sec</span></div>
+        <div class="card-body">
+          <p>Open <span class="path"><span>Project Settings</span><span class="sep">&rsaquo;</span><span>API</span></span> (on newer projects: <b>Data API</b> and <b>API Keys</b>).</p>
+          <div class="req-list" style="grid-template-columns:repeat(2,minmax(0,1fr))">
+            <div><b>Project URL</b><span class="kbd">https://abcdefgh.supabase.co</span></div>
+            <div><b>anon / public key</b>A long text starting with <span class="kbd">eyJ</span></div>
+          </div>
+          <p style="margin:0">You need both in step 6 and step 7.</p>
+        </div>
+      </section>
 
-    <section class="step">
-      <div class="step-num">7</div>
-      <div>
-        <h2>Troubleshooting</h2>
-        <ul>
-          <li><b>No PCs appear.</b> On the PC, Settings, Telemetry should show Service: Running, and Start with Windows plus Enable telemetry must both be on. The service log is at <span class="kbd">C:\Program Files\Chromatic Menu\data\logs\telemetry.log</span>.</li>
-          <li><b>"The database is not set up yet".</b> Step 2 was not run, or it ran on a different project than the URL you entered.</li>
-          <li><b>Sign in fails.</b> The user must exist in Authentication, Users and be confirmed.</li>
-          <li><b>Game requests fail on the PC.</b> Each PC can send one request every 5 minutes; titles are limited to 100 characters and details to 500.</li>
-          <li><b>Check that data is private.</b> This command uses the public key to try to read heartbeats. It must return an empty list <span class="kbd">[]</span> or a permission error, never data:
-            <div class="code"><pre>curl "https://YOUR-PROJECT.supabase.co/rest/v1/heartbeats?select=*&amp;limit=1" -H "apikey: YOUR-ANON-KEY" -H "Authorization: Bearer YOUR-ANON-KEY"</pre></div>
-          </li>
-        </ul>
-      </div>
-    </section>
+      <section class="card step-card" id="pcs">
+        <div class="card-head"><span class="step-n">6</span><h2>Connect each PC</h2><span class="meta">2 min per PC</span></div>
+        <div class="card-body">
+          <p>Boot the PC <b>Thawed</b> if Deep Freeze is installed. Chromatic Menu has <b>no built-in project</b>, so nothing is sent until you do this.</p>
+          <p style="margin-bottom:6px"><b>A PC sends heartbeats only when all three are true:</b></p>
+          <div class="req-list">
+            <div><b>1. Start with Windows</b>Settings &rsaquo; General</div>
+            <div><b>2. Enable telemetry</b>Settings &rsaquo; Telemetry (on by default)</div>
+            <div><b>3. URL and anon key set</b>Settings &rsaquo; Telemetry, or the DataTool</div>
+          </div>
+          <p style="margin-bottom:6px"><b>Option A: DataTool (fastest)</b></p>
+          <ol>
+            <li>Run <span class="kbd">tools\ChromaticMenu-DataTool.bat</span> and choose <b>[2] Set up Supabase</b>.</li>
+            <li>Press Enter to use the URL and key preset at the top of the .bat, or type your own.</li>
+          </ol>
+          <p style="margin-bottom:6px"><b>Option B: in Chromatic Menu</b></p>
+          <ol>
+            <li>Open <span class="path"><span>Settings</span><span class="sep">&rsaquo;</span><span>Telemetry</span></span> (admin password), paste the URL and key, click <b>Save</b>, then <b>Test connection</b>.</li>
+          </ol>
+          <div class="callout check">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>
+            <div><b>Check it worked.</b>Settings &rsaquo; Telemetry shows <b>Service: Running</b> and no warnings. The Request a Game button appears in Technical Tools. Then freeze the PC again.</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card step-card" id="dashboard">
+        <div class="card-head"><span class="step-n">7</span><h2>Open the dashboard</h2><span class="meta">1 min</span></div>
+        <div class="card-body">
+          <ol>
+            <li>Open the <a href="index.html">dashboard</a> and paste the same Project URL and anon key.</li>
+            <li>Sign in with the account from step 4.</li>
+          </ol>
+          <p style="margin:0">You stay signed in on that browser until you log out, even after closing it. PCs appear within a minute of sending their first heartbeat.</p>
+        </div>
+      </section>
+
+      <section class="card step-card" id="help">
+        <div class="card-head"><span class="step-n">?</span><h2>Troubleshooting</h2></div>
+        <div class="card-body">
+          <div class="faq">
+            <details open>
+              <summary><svg class="icon" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>No PCs appear in the dashboard</summary>
+              <div class="answer">Check the three conditions in step 6 on that PC. Settings &rsaquo; Telemetry shows the service status and any warning. The service log is at <span class="kbd">C:\Program Files\Chromatic Menu\data\logs\telemetry.log</span>.</div>
+            </details>
+            <details>
+              <summary><svg class="icon" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>"The database is not set up yet"</summary>
+              <div class="answer">Step 2 was not run, or it ran on a different project than the URL you entered.</div>
+            </details>
+            <details>
+              <summary><svg class="icon" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>Sign in fails</summary>
+              <div class="answer">The user must exist in Authentication &rsaquo; Users and be confirmed (tick Auto Confirm User when creating it).</div>
+            </details>
+            <details>
+              <summary><svg class="icon" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>Request a Game is missing or fails</summary>
+              <div class="answer">The button only shows when telemetry is on and a URL and key are set. Each PC can send one request every 5 minutes; titles are limited to 100 characters and details to 500.</div>
+            </details>
+            <details>
+              <summary><svg class="icon" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>Check that your data is private</summary>
+              <div class="answer">This uses the public key to try to read heartbeats. It must return <span class="kbd">[]</span> or a permission error, never data.
+                <div class="code"><pre>curl "https://YOUR-PROJECT.supabase.co/rest/v1/heartbeats?select=*&amp;limit=1" -H "apikey: YOUR-ANON-KEY" -H "Authorization: Bearer YOUR-ANON-KEY"</pre></div>
+              </div>
+            </details>
+          </div>
+        </div>
+      </section>
+    </main>
   </div>
 
   <script>
@@ -154,6 +220,30 @@
           btn.textContent = 'Press Ctrl+C';
         });
       });
+
+      var sun = '<svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>';
+      var moon = '<svg class="icon" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>';
+      var themeBtn = document.getElementById('themeBtn');
+      function paintTheme() { themeBtn.innerHTML = document.documentElement.getAttribute('data-theme') === 'dark' ? sun : moon; }
+      themeBtn.addEventListener('click', function () {
+        var next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', next);
+        try { localStorage.setItem('cm.theme', next); } catch (e) {}
+        paintTheme();
+      });
+      paintTheme();
+
+      // Highlight the step currently in view.
+      var links = Array.prototype.slice.call(document.querySelectorAll('#stepNav a'));
+      if ('IntersectionObserver' in window) {
+        var observer = new IntersectionObserver(function (entries) {
+          entries.forEach(function (entry) {
+            if (!entry.isIntersecting) return;
+            links.forEach(function (a) { a.classList.toggle('active', a.getAttribute('href') === '#' + entry.target.id); });
+          });
+        }, { rootMargin: '-20% 0px -70% 0px' });
+        document.querySelectorAll('.step-card').forEach(function (s) { observer.observe(s); });
+      }
     })();
   </script>
 </body>

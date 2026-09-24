@@ -79,21 +79,46 @@ export function fmtAgo(iso) {
   return `${Math.round(h / 24)} days ago`;
 }
 
-export function fmtPeso(value) {
-  return '₱' + (Number(value) || 0).toLocaleString('en-PH', { maximumFractionDigits: 0 });
+// Currency used for every revenue figure; chosen in Settings.
+export const CURRENCIES = ['PHP', 'USD', 'EUR', 'GBP', 'IDR', 'MYR', 'SGD', 'THB', 'VND', 'INR', 'JPY', 'KRW', 'AUD', 'CAD', 'BRL', 'MXN'];
+
+export function currency() {
+  const code = store.get('currency', 'PHP');
+  return CURRENCIES.includes(code) ? code : 'PHP';
+}
+
+export function currencySymbol(code = currency()) {
+  try {
+    const part = new Intl.NumberFormat('en-US', { style: 'currency', currency: code, currencyDisplay: 'narrowSymbol' }).formatToParts(0).find(p => p.type === 'currency');
+    return part ? part.value : code;
+  } catch { return code; }
+}
+
+export function fmtMoney(value) {
+  const n = Number(value) || 0;
+  try {
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: currency(), currencyDisplay: 'narrowSymbol', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n);
+  } catch {
+    return Math.round(n).toLocaleString('en-US');
+  }
 }
 
 export function fmtPct(value) {
   return `${Math.round((Number(value) || 0) * 100)}%`;
 }
 
-export function minutesPerPeso() {
-  const v = Number(store.get('minutesPerPeso', '9'));
+// Minutes of active use that earn one unit of the chosen currency.
+export function minutesPerUnit() {
+  const v = Number(store.get('minutesPerUnit', '9'));
   return v > 0 ? v : 9;
 }
 
-export function pesoFromMinutes(minutes) {
-  return (Number(minutes) || 0) / minutesPerPeso();
+export function moneyFromMinutes(minutes) {
+  return (Number(minutes) || 0) / minutesPerUnit();
+}
+
+export function rateText() {
+  return `${fmtMoney(1)} per ${minutesPerUnit()} active min`;
 }
 
 export function cssVar(name) {
