@@ -1072,7 +1072,7 @@ export async function renderRequests(root, filter, onChanged) {
     ? `<button class="btn sm success" data-id="${esc(r.id)}" data-status="added">${icon('check')}Mark added</button><button class="btn sm ghost danger" data-id="${esc(r.id)}" data-status="rejected">Reject</button>`
     : `<button class="btn sm ghost" data-id="${esc(r.id)}" data-status="new">Move back to New</button>`;
 
-    <div class="req-header">
+  root.innerHTML = `<div class="req-header">
       <div class="seg req-seg" id="reqFilter">
         ${filters.map(([k, l]) => `<button data-filter="${k}" class="${k === filter ? 'active' : ''}">${l}<span class="count">${counts[k] || 0}</span></button>`).join('')}
       </div>
