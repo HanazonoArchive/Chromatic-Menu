@@ -280,12 +280,14 @@ function renderControls(page) {
   const mode = PAGES[page].controls;
   if (mode === 'day') {
     const today = todayStr();
-    el.innerHTML = `<div class="seg">
+    el.innerHTML = `<div class="seg date-seg">
         <button id="prevDay" aria-label="Previous day">Prev</button>
         <button id="todayBtn" class="${state.day === today ? 'active' : ''}">Today</button>
         <button id="nextDay" aria-label="Next day" ${state.day >= today ? 'disabled' : ''}>Next</button>
       </div>
-      <input class="input" type="date" id="dayInput" value="${state.day}" max="${today}">${refresh}`;
+      <div class="date-pickers">
+        <input class="input" type="date" id="dayInput" value="${state.day}" max="${today}">
+      </div>${refresh}`;
     const go = (day) => { state.day = day > todayStr() ? todayStr() : day; renderPage(); };
     el.querySelector('#prevDay').onclick = () => go(addDays(state.day, -1));
     el.querySelector('#nextDay').onclick = () => go(addDays(state.day, 1));
@@ -293,10 +295,12 @@ function renderControls(page) {
     el.querySelector('#dayInput').onchange = (e) => e.target.value && go(e.target.value);
   } else if (mode === 'range') {
     const presets = [['today', 'Today'], ['7d', '7D'], ['30d', '30D'], ['90d', '90D']];
-    el.innerHTML = `<div class="seg" id="presetSeg">${presets.map(([k, l]) => `<button data-preset="${k}" class="${state.range.preset === k ? 'active' : ''}">${l}</button>`).join('')}</div>
-      <input class="input" type="date" id="fromInput" value="${state.range.from}" max="${todayStr()}" aria-label="From">
-      <span class="subtle">to</span>
-      <input class="input" type="date" id="toInput" value="${state.range.to}" max="${todayStr()}" aria-label="To">${refresh}`;
+    el.innerHTML = `<div class="seg date-seg" id="presetSeg">${presets.map(([k, l]) => `<button data-preset="${k}" class="${state.range.preset === k ? 'active' : ''}">${l}</button>`).join('')}</div>
+      <div class="date-pickers">
+        <input class="input" type="date" id="fromInput" value="${state.range.from}" max="${todayStr()}" aria-label="From">
+        <span class="subtle">to</span>
+        <input class="input" type="date" id="toInput" value="${state.range.to}" max="${todayStr()}" aria-label="To">
+      </div>${refresh}`;
     el.querySelector('#presetSeg').onclick = (e) => {
       const b = e.target.closest('button[data-preset]');
       if (!b) return;

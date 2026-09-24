@@ -119,7 +119,7 @@
         <div class="card-head"><span class="step-n">5</span><h2>Copy the Project URL and anon key</h2><span class="meta">30 sec</span></div>
         <div class="card-body">
           <p>Open <span class="path"><span>Project Settings</span><span class="sep">&rsaquo;</span><span>API</span></span> (on newer projects: <b>Data API</b> and <b>API Keys</b>).</p>
-          <div class="req-list" style="grid-template-columns:repeat(2,minmax(0,1fr))">
+          <div class="req-list req-list-2">
             <div><b>Project URL</b><span class="kbd">https://abcdefgh.supabase.co</span></div>
             <div><b>anon / public key</b>A long text starting with <span class="kbd">eyJ</span></div>
           </div>
@@ -187,7 +187,16 @@
             <details>
               <summary><svg class="icon" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>Check that your data is private</summary>
               <div class="answer">This uses the public key to try to read heartbeats. It must return <span class="kbd">[]</span> or a permission error, never data.
-                <div class="code"><pre>curl "https://YOUR-PROJECT.supabase.co/rest/v1/heartbeats?select=*&amp;limit=1" -H "apikey: YOUR-ANON-KEY" -H "Authorization: Bearer YOUR-ANON-KEY"</pre></div>
+                <div class="code">
+                  <div class="code-head">
+                    <svg class="icon" viewBox="0 0 24 24"><polyline points="4 17 10 11 4 5"/><line x1="12" x2="20" y1="19" y2="19"/></svg>
+                    <span class="mono">Terminal</span><span class="spacer"></span>
+                    <button class="btn sm ghost" id="copyCurl">Copy</button>
+                  </div>
+                  <pre id="curlText">curl "https://YOUR-PROJECT.supabase.co/rest/v1/heartbeats?select=*&amp;limit=1" \
+  -H "apikey: YOUR-ANON-KEY" \
+  -H "Authorization: Bearer YOUR-ANON-KEY"</pre>
+                </div>
               </div>
             </details>
           </div>
@@ -220,6 +229,25 @@
           btn.textContent = 'Press Ctrl+C';
         });
       });
+
+      var curlBtn = document.getElementById('copyCurl');
+      var curlPre = document.getElementById('curlText');
+      if (curlBtn && curlPre) {
+        curlBtn.addEventListener('click', function () {
+          var textToCopy = 'curl "https://YOUR-PROJECT.supabase.co/rest/v1/heartbeats?select=*&limit=1" -H "apikey: YOUR-ANON-KEY" -H "Authorization: Bearer YOUR-ANON-KEY"';
+          navigator.clipboard.writeText(textToCopy).then(function () {
+            curlBtn.textContent = 'Copied';
+            setTimeout(function () { curlBtn.textContent = 'Copy'; }, 1500);
+          }, function () {
+            var range = document.createRange();
+            range.selectNodeContents(curlPre);
+            var sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+            curlBtn.textContent = 'Press Ctrl+C';
+          });
+        });
+      }
 
       var sun = '<svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>';
       var moon = '<svg class="icon" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>';

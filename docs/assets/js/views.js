@@ -457,14 +457,14 @@ export async function renderRevenue(root, range) {
   const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   const moneyPerPcHour = 60 / minutesPerUnit();
   const shade = (v) => v > 0 ? `background:color-mix(in srgb, var(--accent) ${Math.round((0.14 + 0.86 * (v / maxHeat)) * 100)}%, var(--track))` : '';
-  const heatmap = `<div class="heatmap">
+  const heatmap = `<div class="heatmap-wrap"><div class="heatmap">
     <div></div>${Array.from({ length: 24 }, (_, h) => `<div class="hm-hour">${h % 3 === 0 ? h : ''}</div>`).join('')}
     ${weekdays.map((name, i) => `<div class="hm-label">${name}</div>${Array.from({ length: 24 }, (_, h) => {
       const v = heatByKey.get(`${i + 1}|${h}`) || 0;
       const tip = `${name} ${String(h).padStart(2, '0')}:00\n${v.toFixed(1)} PCs in use on average\nabout ${fmtMoney(v * moneyPerPcHour)} per hour`;
       return `<div class="hm-cell" style="${shade(v)}" data-tip="${esc(tip)}"></div>`;
     }).join('')}`).join('')}
-  </div>
+  </div></div>
   <div class="hm-scale">Less ${[0.15, 0.4, 0.7, 1].map(f => `<i style="${shade(f * maxHeat)}"></i>`).join('')} More</div>`;
 
   // Hero cards depending on range (Single Day vs Multi-Day)
@@ -716,11 +716,11 @@ export async function renderRequests(root, filter, onChanged) {
     ? `<button class="btn sm success" data-id="${esc(r.id)}" data-status="added">${icon('check')}Mark added</button><button class="btn sm ghost danger" data-id="${esc(r.id)}" data-status="rejected">Reject</button>`
     : `<button class="btn sm ghost" data-id="${esc(r.id)}" data-status="new">Move back to New</button>`;
 
-  root.innerHTML = `<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px">
-      <div class="seg" id="reqFilter">
+    <div class="req-header">
+      <div class="seg req-seg" id="reqFilter">
         ${filters.map(([k, l]) => `<button data-filter="${k}" class="${k === filter ? 'active' : ''}">${l}<span class="count">${counts[k] || 0}</span></button>`).join('')}
       </div>
-      <span class="meta">Customers send these from the Request a Game button. Each PC can send one every 5 minutes.</span>
+      <div class="meta req-hint">Customers send these from the Request a Game button. Each PC can send one every 5 minutes.</div>
     </div>
     <div class="card">
       ${rows.length === 0 ? empty(filter === 'new' ? 'Nothing waiting. New requests appear here.' : 'No requests here.', 'message-square') : `<ul class="feed">
@@ -769,7 +769,7 @@ export function renderSettings(root, ctx) {
           <input class="input" id="mpp" type="number" min="1" max="120" step="1" value="${minutesPerUnit()}" style="max-width:160px">
         </label>
         <div class="hint" style="margin-top:-8px">Default is 9 minutes. Every revenue figure in the dashboard uses this currency and rate.</div>
-        <div style="margin-top:16px;display:flex;align-items:center;gap:10px"><button class="btn primary" id="saveMpp">Save</button><span id="mppMsg" class="meta"></span></div>
+        <div style="margin-top:16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap"><button class="btn primary" id="saveMpp">Save</button><span id="mppMsg" class="meta"></span></div>
       </div>
     </div>
     <div class="card">
