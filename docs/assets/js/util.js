@@ -76,7 +76,8 @@ export function fmtMinutes(minutes) {
   if (m < 60) return `${m}m`;
   const h = Math.floor(m / 60);
   const r = m % 60;
-  return r ? `${h}h ${r}m` : `${h}h`;
+  const hStr = h.toLocaleString('en-US');
+  return r ? `${hStr}h ${r}m` : `${hStr}h`;
 }
 
 export function fmtAgo(iso) {
@@ -106,7 +107,7 @@ export function currencySymbol(code = currency()) {
 
 export function fmtMoney(value, opts = {}) {
   const n = Math.max(0, Number(value) || 0);
-  const defaultFrac = (n > 0 && n < 10 && !Number.isInteger(n)) ? 2 : 0;
+  const defaultFrac = Number.isInteger(n) ? 0 : 2;
   const minFrac = opts.minimumFractionDigits ?? defaultFrac;
   const maxFrac = opts.maximumFractionDigits ?? defaultFrac;
   try {
