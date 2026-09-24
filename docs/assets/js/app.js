@@ -1,6 +1,6 @@
 import { savedProject, normalizeUrl, verifyProject, connect, db, forgetProject, api, isMissingSchema } from './api.js';
 import { icon } from './icons.js';
-import { esc, store, todayStr, addDays, fmtDay } from './util.js';
+import { esc, store, todayStr, addDays, fmtDay, recordPcShops, getAllShops } from './util.js';
 import {
   renderOverview, renderTimeline, renderPrograms, renderRevenue, renderRequests, renderSettings,
   destroyCharts, bindTooltips, hideTooltip, loading
@@ -33,8 +33,27 @@ function setTheme(theme) {
 }
 
 function brand(sub) {
-  return `<div class="brand"><div class="brand-mark">${icon('layout-grid')}</div>
-    <div class="brand-text"><div class="brand-name">Chromatic Menu</div><div class="brand-sub">${esc(sub)}</div></div></div>`;
+  const shops = getAllShops();
+  const shopName = shops.length === 1 ? shops[0] : (shops.length > 1 ? `${shops.length} Shops` : 'Chromatic Menu');
+  const shopSub = shops.length === 1 ? 'Shop Dashboard' : (shops.length > 1 ? 'Multi-Shop Dashboard' : esc(sub));
+  const isShop = shops.length > 0;
+  return `<div class="brand"><div class="brand-mark">${icon(isShop ? 'store' : 'layout-grid')}</div>
+    <div class="brand-text"><div class="brand-name" title="${esc(shopName)}">${esc(shopName)}</div><div class="brand-sub">${esc(shopSub)}</div></div></div>`;
+}
+
+function updateSidebarBrand() {
+  const brandEl = root.querySelector('.sidebar > .brand');
+  if (!brandEl) return;
+  const shops = getAllShops();
+  const shopName = shops.length === 1 ? shops[0] : (shops.length > 1 ? `${shops.length} Shops` : 'Chromatic Menu');
+  const shopSub = shops.length === 1 ? 'Shop Dashboard' : (shops.length > 1 ? 'Multi-Shop Dashboard' : 'Dashboard');
+  const isShop = shops.length > 0;
+  const mark = brandEl.querySelector('.brand-mark');
+  const name = brandEl.querySelector('.brand-name');
+  const sub = brandEl.querySelector('.brand-sub');
+  if (mark) mark.innerHTML = icon(isShop ? 'store' : 'layout-grid');
+  if (name) { name.textContent = shopName; name.title = shopName; }
+  if (sub) sub.textContent = shopSub;
 }
 
 function errorAlert(text) {
@@ -183,14 +202,17 @@ async function changeProject() {
 // ---------------------------------------------------------------------------
 
 async function enterApp() {
+  let initialStatus = [];
   try {
-    await api.pcStatus();
+    initialStatus = await api.pcStatus();
   } catch (e) {
     if (isMissingSchema(e)) { showSchemaMissing(); return; }
     if (e && (e.code === 'PGRST301' || /JWT/i.test(e.message || ''))) { showLogin('Your session expired. Please sign in again.'); return; }
     showLogin('Could not load data: ' + (e.message || e));
     return;
   }
+
+  recordPcShops(initialStatus);
 
   const { data } = await db().auth.getUser();
   state.email = data?.user?.email || '';
@@ -333,6 +355,7 @@ async function renderPage() {
       await renderOverview(pageEl);
       state.refreshTimer = setInterval(async () => {
         await renderOverview(pageEl);
+        updateSidebarBrand();
         updateRequestBadge();
       }, 60000);
       break;
@@ -358,6 +381,7 @@ async function renderPage() {
       break;
     }
   }
+  updateSidebarBrand();
 }
 
 // ---------------------------------------------------------------------------

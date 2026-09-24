@@ -104,12 +104,22 @@ export function currencySymbol(code = currency()) {
   } catch { return code; }
 }
 
-export function fmtMoney(value) {
+export function fmtMoney(value, opts = {}) {
   const n = Number(value) || 0;
+  const defaultFrac = (n > 0 && n < 10 && !Number.isInteger(n)) ? 2 : 0;
+  const minFrac = opts.minimumFractionDigits ?? defaultFrac;
+  const maxFrac = opts.maximumFractionDigits ?? defaultFrac;
   try {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: currency(), currencyDisplay: 'narrowSymbol', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n);
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: currency(),
+      currencyDisplay: 'narrowSymbol',
+      minimumFractionDigits: minFrac,
+      maximumFractionDigits: maxFrac,
+      ...opts
+    }).format(n);
   } catch {
-    return Math.round(n).toLocaleString('en-US');
+    return (maxFrac > 0 ? n.toFixed(maxFrac) : Math.round(n)).toLocaleString('en-US');
   }
 }
 
@@ -154,3 +164,24 @@ export function groupBy(rows, key) {
 export function sum(rows, key) {
   return rows.reduce((acc, r) => acc + (Number(typeof key === 'function' ? key(r) : r[key]) || 0), 0);
 }
+
+// Global registry of PC name -> Shop (menu_name) mapping
+export const pcShopMap = new Map();
+
+export function recordPcShops(rows) {
+  if (!rows || !Array.isArray(rows)) return;
+  for (const r of rows) {
+    if (r && r.pc_name && r.menu_name) {
+      pcShopMap.set(r.pc_name, r.menu_name);
+    }
+  }
+}
+
+export function getShopForPc(pcName) {
+  return pcShopMap.get(pcName) || '';
+}
+
+export function getAllShops() {
+  return [...new Set([...pcShopMap.values()].filter(Boolean))];
+}
+

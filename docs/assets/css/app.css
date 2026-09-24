@@ -397,8 +397,15 @@ label.field > span { display: block; font-size: 12.5px; font-weight: 500; color:
 .pc::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--border-strong); }
 .pc.on::before { background: var(--success); }
 .pc.off { background: var(--surface-2); }
-.pc-top { display: flex; align-items: center; gap: 10px; }
-.pc-top .name { font-weight: 600; font-size: 14.5px; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pc-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.pc-identity { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.pc-top .name { font-weight: 600; font-size: 14.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pc-shop { display: inline-flex; align-items: center; gap: 4.5px; font-size: 11.5px; color: var(--text-3); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pc-shop .icon { width: 12px; height: 12px; flex-shrink: 0; opacity: 0.85; }
+.table-shop { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: var(--text-3); margin-top: 2px; }
+.table-shop .icon { width: 11px; height: 11px; flex-shrink: 0; opacity: 0.85; }
+.tl-shop { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: var(--text-3); margin-top: 2px; }
+.tl-shop .icon { width: 11px; height: 11px; flex-shrink: 0; opacity: 0.85; }
 .pc-now { margin: 14px 0 4px; }
 .pc-now .program { font-size: 17px; font-weight: 600; letter-spacing: -0.015em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pc.off .pc-now .program { color: var(--text-2); font-weight: 500; font-size: 15px; }

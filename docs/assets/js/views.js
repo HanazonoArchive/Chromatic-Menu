@@ -4,7 +4,8 @@ import { icon } from './icons.js';
 import {
   esc, todayStr, addDays, daysInclusive, dayStartMs, fmtDay, fmtTime, fmtDateTime, fmtMinutes,
   fmtAgo, fmtMoney, fmtPct, minutesPerUnit, moneyFromMinutes, rateText, currency, currencySymbol, CURRENCIES, cssVar, seriesColor, groupBy, sum,
-  IDLE_PROGRAMS, NON_PROGRAMS, formatProgramName, store, TZ
+  IDLE_PROGRAMS, NON_PROGRAMS, formatProgramName, store, TZ,
+  recordPcShops, getShopForPc, getAllShops
 } from './util.js';
 
 Chart.register(...registerables);
@@ -117,6 +118,9 @@ export async function renderOverview(root) {
     return;
   }
 
+  recordPcShops(status);
+  recordPcShops(daily);
+
   const todayRows = daily.filter(d => d.day === today);
   const yesterdayRows = daily.filter(d => d.day === yesterday);
   const byPc = new Map(todayRows.map(d => [d.pc_name, d]));
@@ -146,7 +150,7 @@ export async function renderOverview(root) {
     <div class="card hero-card">
       <div class="top">${icon('monitor')}<span class="eyebrow">PCs online now</span></div>
       <div class="hero-value">${online.length}<span class="of"> / ${status.length}</span></div>
-      <div class="hero-foot"><div class="pc-dots">${status.map(s => `<span class="pc-dot ${s.is_online ? 'on' : ''}" title="${esc(s.pc_name)}"><span class="dot"></span>${esc(s.pc_name)}</span>`).join('')}</div></div>
+      <div class="hero-foot"><div class="pc-dots">${status.map(s => `<span class="pc-dot ${s.is_online ? 'on' : ''}" title="${esc(s.pc_name)}${s.menu_name ? ` &middot; ${esc(s.menu_name)}` : ''}"><span class="dot"></span>${esc(s.pc_name)}</span>`).join('')}</div></div>
     </div>
     <div class="card hero-card">
       <div class="top">${icon('activity')}<span class="eyebrow">Utilisation today</span></div>
@@ -166,9 +170,13 @@ export async function renderOverview(root) {
     : `<div class="grid pcs">${status.map(s => {
         const d = byPc.get(s.pc_name) || { minutes_on: 0, minutes_active: 0 };
         const idle = IDLE_PROGRAMS.has(s.last_program);
+        const shop = s.menu_name || getShopForPc(s.pc_name) || 'PisoNet';
         return `<div class="card pc ${s.is_online ? 'on' : 'off'}">
           <div class="pc-top">
-            <span class="name" title="${esc(s.pc_name)}">${esc(s.pc_name)}</span>
+            <div class="pc-identity">
+              <span class="name" title="${esc(s.pc_name)}">${esc(s.pc_name)}</span>
+              <span class="pc-shop" title="Shop: ${esc(shop)}">${icon('store')}<span>${esc(shop)}</span></span>
+            </div>
             <span class="badge ${s.is_online ? 'online' : 'offline'}"><span class="dot"></span>${s.is_online ? 'Online' : 'Offline'}</span>
           </div>
           <div class="pc-now">
@@ -190,14 +198,17 @@ export async function renderOverview(root) {
       <div>
         <div class="title">${esc(r.title)}</div>
         ${r.description ? `<div class="desc">${esc(r.description)}</div>` : ''}
-        <div class="meta"><span>${esc(r.pc_name)}</span><span>${esc(fmtDateTime(r.created_at))}</span></div>
+        <div class="meta"><span class="strong">${esc(r.pc_name)}</span>${r.menu_name ? `<span class="table-shop" style="display:inline-flex">${icon('store')}<span>${esc(r.menu_name)}</span></span>` : ''}<span>${esc(fmtDateTime(r.created_at))}</span></div>
       </div>
       <div class="side"><span class="badge new">New</span></div>
     </li>`).join('')}</ul></div>`;
 
+  const shops = getAllShops();
+  const shopMeta = shops.length === 1 ? `Shop: <b>${esc(shops[0])}</b>` : (shops.length > 1 ? `Across <b>${shops.length}</b> shops` : '');
+
   root.innerHTML = `<div class="attention">${attention.join('')}</div>
     ${hero}
-    <div class="section-head"><h2>Computers</h2><span class="meta">Updated ${esc(fmtTime(Date.now()))} &middot; refreshes every minute</span></div>
+    <div class="section-head"><h2>Computers</h2><span class="meta">${shopMeta ? `${shopMeta} &middot; ` : ''}Updated ${esc(fmtTime(Date.now()))} &middot; refreshes every minute</span></div>
     ${pcs}
     ${requests}`;
 }
@@ -214,6 +225,8 @@ export async function renderTimeline(root, day) {
     root.innerHTML = errorBox(e);
     return;
   }
+
+  recordPcShops(status);
 
   const start = dayStartMs(day);
   const end = start + 86400000;
@@ -259,8 +272,12 @@ export async function renderTimeline(root, day) {
         <span>Longest session<b>${fmtMinutes(longest)}</b></span>
       </div>` : `<div class="tl-stats"><span>Off all day</span></div>`;
 
+    const shop = statusByPc.get(pc)?.menu_name || getShopForPc(pc) || '';
     return `<div class="tl-row">
-      <div class="tl-name"><div class="n">${esc(pc)}${online ? '<span class="badge online"><span class="dot"></span>Online</span>' : ''}</div></div>
+      <div class="tl-name">
+        <div class="n">${esc(pc)}${online ? '<span class="badge online"><span class="dot"></span>Online</span>' : ''}</div>
+        ${shop ? `<div class="tl-shop" title="Shop: ${esc(shop)}">${icon('store')}<span>${esc(shop)}</span></div>` : ''}
+      </div>
       <div class="tl-bar">${gridLines}${bars}${nowMarker}</div>
       ${stats}
     </div>`;
@@ -334,8 +351,15 @@ export async function renderPrograms(root, range) {
       <div class="card">
         <div class="card-head"><h2>By computer</h2><span class="meta">Top 3 each</span></div>
         ${perPc.length ? `<div class="table-wrap"><table class="table"><tbody>
-          ${perPc.map(p => `<tr><td style="width:36%"><div class="strong">${esc(p.pc)}</div><div class="meta">${fmtMinutes(p.total)} active</div></td>
-            <td>${p.top.map((t, i) => `<div style="display:flex;justify-content:space-between;gap:10px;${i ? 'margin-top:4px' : ''}"><span class="${i === 0 ? 'strong' : 'muted'}">${esc(t.program)}</span><span class="subtle tabular">${fmtMinutes(t.minutes)}</span></div>`).join('')}</td></tr>`).join('')}
+          ${perPc.map(p => {
+            const shop = getShopForPc(p.pc);
+            return `<tr><td style="width:36%">
+              <div class="strong">${esc(p.pc)}</div>
+              ${shop ? `<div class="table-shop" title="Shop: ${esc(shop)}">${icon('store')}<span>${esc(shop)}</span></div>` : ''}
+              <div class="meta" style="margin-top:2px">${fmtMinutes(p.total)} active</div>
+            </td>
+            <td>${p.top.map((t, i) => `<div style="display:flex;justify-content:space-between;gap:10px;${i ? 'margin-top:4px' : ''}"><span class="${i === 0 ? 'strong' : 'muted'}">${esc(t.program)}</span><span class="subtle tabular">${fmtMinutes(t.minutes)}</span></div>`).join('')}</td></tr>`;
+          }).join('')}
         </tbody></table></div>` : empty('No data.', 'monitor')}
       </div>
     </div>
@@ -362,15 +386,33 @@ export async function renderRevenue(root, range) {
   const days = daysInclusive(range.from, range.to);
   const prevTo = addDays(range.from, -1);
   const prevFrom = addDays(prevTo, -(days - 1));
-  let daily, prev, heat;
+  const isSingleDay = days === 1;
+
+  let daily, prev, heat, usage, timeline = [];
   try {
-    [daily, prev, heat] = await Promise.all([
-      api.daily(range.from, range.to), api.daily(prevFrom, prevTo), api.heatmap(range.from, range.to)
-    ]);
+    const promises = [
+      api.daily(range.from, range.to),
+      api.daily(prevFrom, prevTo),
+      api.heatmap(range.from, range.to),
+      api.usage(range.from, range.to)
+    ];
+    if (isSingleDay) {
+      promises.push(api.timeline(range.from));
+    }
+    const results = await Promise.all(promises);
+    daily = results[0] || [];
+    prev = results[1] || [];
+    heat = results[2] || [];
+    usage = results[3] || [];
+    if (isSingleDay) {
+      timeline = results[4] || [];
+    }
   } catch (e) {
     root.innerHTML = errorBox(e);
     return;
   }
+
+  recordPcShops(daily);
 
   const activeTotal = sum(daily, 'minutes_active');
   const onTotal = sum(daily, 'minutes_on');
@@ -388,9 +430,27 @@ export async function renderRevenue(root, range) {
     const rows = daily.filter(d => d.pc_name === pc);
     const on = sum(rows, 'minutes_on');
     const active = sum(rows, 'minutes_active');
-    return { pc, on, active, revenue: moneyFromMinutes(active) };
+    const shop = rows[0]?.menu_name || getShopForPc(pc) || '';
+    return { pc, shop, on, active, revenue: moneyFromMinutes(active) };
   }).sort((a, b) => b.revenue - a.revenue);
 
+  // Top earning games & applications (excluding system / shell programs)
+  const progMap = new Map();
+  for (const u of usage) {
+    if (!u.program || NON_PROGRAMS.has(u.program)) continue;
+    progMap.set(u.program, (progMap.get(u.program) || 0) + Number(u.minutes || 0));
+  }
+  const topPrograms = [...progMap.entries()]
+    .map(([name, mins]) => ({
+      name,
+      minutes: mins,
+      revenue: moneyFromMinutes(mins),
+      share: activeTotal > 0 ? (mins / activeTotal) : 0
+    }))
+    .sort((a, b) => b.minutes - a.minutes)
+    .slice(0, 10);
+
+  // Heatmap calculations
   const maxHeat = Math.max(0.0001, ...heat.map(h => Number(h.avg_active_pcs)));
   const heatByKey = new Map(heat.map(h => [`${h.weekday}|${h.hour}`, Number(h.avg_active_pcs)]));
   const busiest = heat.reduce((a, b) => (Number(b.avg_active_pcs) > Number(a?.avg_active_pcs ?? -1) ? b : a), null);
@@ -407,74 +467,226 @@ export async function renderRevenue(root, range) {
   </div>
   <div class="hm-scale">Less ${[0.15, 0.4, 0.7, 1].map(f => `<i style="${shade(f * maxHeat)}"></i>`).join('')} More</div>`;
 
-  root.innerHTML = `<div class="hero">
+  // Hero cards depending on range (Single Day vs Multi-Day)
+  let heroCardsHtml = '';
+  if (isSingleDay) {
+    const isToday = range.from === todayStr();
+    const dayLabel = isToday ? 'today' : fmtDay(range.from);
+    heroCardsHtml = `
       <div class="card hero-card primary">
-        <div class="top">${icon('wallet')}<span class="eyebrow">Estimated revenue</span></div>
+        <div class="top">${icon('wallet')}<span class="eyebrow">Estimated revenue ${esc(dayLabel)}</span></div>
         <div class="hero-value">${fmtMoney(revenue)}</div>
-        <div class="hero-foot">${delta(change, `vs previous ${days} day${days === 1 ? '' : 's'} (${fmtMoney(prevRevenue)})`) || `<span class="subtle">No data for the previous ${days} day${days === 1 ? '' : 's'}</span>`}</div>
+        <div class="hero-foot">${delta(change, `vs yesterday (${fmtMoney(prevRevenue)})`) || `<span class="subtle">Yesterday: ${fmtMoney(prevRevenue)}</span>`}</div>
       </div>
       <div class="card hero-card">
-        <div class="top">${icon('activity')}<span class="eyebrow">Average per day</span></div>
+        <div class="top">${icon('zap')}<span class="eyebrow">Paid active time</span></div>
+        <div class="hero-value">${fmtMinutes(activeTotal)}</div>
+        <div class="hero-foot">of ${fmtMinutes(onTotal)} on &middot; ${fmtMinutes(Math.max(0, onTotal - activeTotal))} idle</div>
+      </div>
+      <div class="card hero-card">
+        <div class="top">${icon('activity')}<span class="eyebrow">Shop utilisation</span></div>
+        <div class="hero-value">${fmtPct(onTotal ? activeTotal / onTotal : 0)}</div>
+        <div class="hero-foot"><span class="subtle">${rateText()}</span></div>
+      </div>`;
+  } else {
+    heroCardsHtml = `
+      <div class="card hero-card primary">
+        <div class="top">${icon('wallet')}<span class="eyebrow">Total estimated revenue</span></div>
+        <div class="hero-value">${fmtMoney(revenue)}</div>
+        <div class="hero-foot">${delta(change, `vs previous ${days} days (${fmtMoney(prevRevenue)})`) || `<span class="subtle">Previous ${days} days: ${fmtMoney(prevRevenue)}</span>`}</div>
+      </div>
+      <div class="card hero-card">
+        <div class="top">${icon('calendar')}<span class="eyebrow">Daily average</span></div>
         <div class="hero-value">${fmtMoney(revenue / days)}</div>
-        <div class="hero-foot">${days} day${days === 1 ? '' : 's'} in range</div>
+        <div class="hero-foot">${days} days in selected period</div>
       </div>
       <div class="card hero-card">
         <div class="top">${icon('trending-up')}<span class="eyebrow">Best day</span></div>
         <div class="hero-value">${best && best.revenue > 0 ? fmtMoney(best.revenue) : '&mdash;'}</div>
         <div class="hero-foot">${best && best.revenue > 0 ? esc(fmtDay(best.day, { weekday: 'long', month: 'short', day: 'numeric' })) : 'No revenue in range'}</div>
-      </div>
-    </div>
+      </div>`;
+  }
+
+  // Chart configuration: Hourly breakdown for single day, daily breakdown for multi-day
+  let chartTitle = 'Revenue per day';
+  let chartMeta = 'Stacked by computer';
+  let chartLabels = [];
+  let chartDatasets = [];
+
+  if (isSingleDay) {
+    const isToday = range.from === todayStr();
+    chartTitle = isToday ? "Today's revenue by hour" : `Hourly revenue for ${fmtDay(range.from)}`;
+    chartMeta = "Active revenue earned in each hour (by computer)";
+
+    const hours = Array.from({ length: 24 }, (_, h) => h);
+    chartLabels = hours.map(h => {
+      const ampm = h >= 12 ? 'PM' : 'AM';
+      const h12 = h % 12 === 0 ? 12 : h % 12;
+      return `${h12} ${ampm}`;
+    });
+
+    const startMs = dayStartMs(range.from);
+    const endMs = startMs + 86400000;
+    const clamp = (ms) => Math.min(endMs, Math.max(startMs, ms));
+
+    const pcHourly = new Map();
+    for (const pc of pcs) pcHourly.set(pc, new Array(24).fill(0));
+
+    for (const row of timeline) {
+      if (row.kind !== 'active') continue;
+      const a = clamp(Date.parse(row.seg_start));
+      const b = clamp(Date.parse(row.seg_end));
+      if (b <= a) continue;
+
+      const pcArr = pcHourly.get(row.pc_name);
+      if (!pcArr) continue;
+
+      for (let h = 0; h < 24; h++) {
+        const hStart = startMs + h * 3600000;
+        const hEnd = hStart + 3600000;
+        const overlap = Math.max(0, Math.min(b, hEnd) - Math.max(a, hStart));
+        if (overlap > 0) {
+          pcArr[h] += overlap / 60000; // in minutes
+        }
+      }
+    }
+
+    chartDatasets = pcs.map((pc, i) => ({
+      label: pc,
+      data: hours.map(h => {
+        const mins = pcHourly.get(pc)?.[h] || 0;
+        return Math.round(moneyFromMinutes(mins) * 100) / 100;
+      }),
+      backgroundColor: seriesColor(i),
+      borderRadius: 3,
+      maxBarThickness: 28
+    }));
+  } else {
+    chartTitle = 'Revenue per day';
+    chartMeta = 'Stacked by computer';
+    chartLabels = dayList.map(d => fmtDay(d));
+    chartDatasets = pcs.map((pc, i) => ({
+      label: pc,
+      data: dayList.map(d => {
+        const mins = byDayPc.get(`${d}|${pc}`)?.minutes_active || 0;
+        return Math.round(moneyFromMinutes(mins) * 100) / 100;
+      }),
+      backgroundColor: seriesColor(i),
+      borderRadius: 3,
+      maxBarThickness: 34
+    }));
+  }
+
+  // Games table HTML
+  const gamesTable = topPrograms.length ? `
+    <div class="table-wrap"><table class="table">
+      <thead><tr><th>Program / Game</th><th class="num">Time</th><th>Share</th><th class="num">Estimate</th></tr></thead>
+      <tbody>${topPrograms.map(p => `<tr>
+        <td class="strong">${esc(p.name)}</td>
+        <td class="num">${fmtMinutes(p.minutes)}</td>
+        <td style="width:28%">
+          <div style="display:flex;align-items:center;gap:8px">
+            <div class="bar-track" style="flex:1"><div class="bar-fill" style="width:${Math.round(p.share * 100)}%"></div></div>
+            <span class="subtle tabular" style="width:36px;text-align:right">${fmtPct(p.share)}</span>
+          </div>
+        </td>
+        <td class="num strong">${fmtMoney(p.revenue)}</td>
+      </tr>`).join('')}</tbody>
+    </table></div>` : empty('No game or app usage recorded in this period.', 'app-window');
+
+  // PC Table HTML
+  const pcTable = perPc.length ? `
+    <div class="table-wrap"><table class="table">
+      <thead><tr><th>Computer / Shop</th><th class="num">Active</th><th class="num">On-time</th><th class="num">Utilisation</th><th>Share</th><th class="num">Estimate</th></tr></thead>
+      <tbody>${perPc.map((p, i) => `<tr>
+        <td class="${i === 0 ? 'strong' : ''}">
+          <div class="strong">${esc(p.pc)}</div>
+          ${p.shop ? `<div class="table-shop" title="Shop: ${esc(p.shop)}">${icon('store')}<span>${esc(p.shop)}</span></div>` : ''}
+        </td>
+        <td class="num">${fmtMinutes(p.active)}</td>
+        <td class="num subtle">${fmtMinutes(p.on)}</td>
+        <td class="num">${fmtPct(p.on ? p.active / p.on : 0)}</td>
+        <td style="width:20%"><div class="bar-track"><div class="bar-fill" style="width:${revenue ? (p.revenue / revenue) * 100 : 0}%;background:${seriesColor(pcs.indexOf(p.pc))}"></div></div></td>
+        <td class="num strong">${fmtMoney(p.revenue)}</td>
+      </tr>`).join('')}</tbody>
+    </table></div>` : empty('No computer data.', 'monitor');
+
+  root.innerHTML = `
+    <div class="hero">${heroCardsHtml}</div>
     <div class="card stats">
-      ${stat('Active time', fmtMinutes(activeTotal), 'Basis of the estimate', 'zap')}
-      ${stat('Utilisation', fmtPct(onTotal ? activeTotal / onTotal : 0), `${fmtMinutes(onTotal)} on in total`, 'activity')}
-      ${stat('Top earner', perPc.length ? esc(perPc[0].pc) : '&mdash;', perPc.length ? `${fmtMoney(perPc[0].revenue)} &middot; ${fmtPct(revenue ? perPc[0].revenue / revenue : 0)} of total` : '', 'monitor')}
-      ${stat('Busiest hour', busiest && Number(busiest.avg_active_pcs) > 0 ? `${weekdays[busiest.weekday - 1]} ${String(busiest.hour).padStart(2, '0')}:00` : '&mdash;', busiest && Number(busiest.avg_active_pcs) > 0 ? `${Number(busiest.avg_active_pcs).toFixed(1)} PCs in use on average` : '', 'clock')}
+      ${stat('Active paid time', fmtMinutes(activeTotal), 'Customer gameplay & app time', 'zap')}
+      ${stat('Idle in menu', fmtMinutes(Math.max(0, onTotal - activeTotal)), 'PC on, but no customer playing', 'layout-grid')}
+      ${stat('Shop utilisation', fmtPct(onTotal ? activeTotal / onTotal : 0), `${fmtMinutes(onTotal)} total power-on`, 'activity')}
+      ${stat('Top earner', perPc.length ? esc(perPc[0].pc) : '&mdash;', perPc.length ? `${fmtMoney(perPc[0].revenue)} &middot; ${fmtPct(revenue ? perPc[0].revenue / revenue : 0)}` : '', 'monitor')}
     </div>
     <div class="card section">
-      <div class="card-head"><h2>Revenue per day</h2><span class="meta">Stacked by computer</span></div>
-      <div class="card-body">${daily.length ? '<div class="chart-box"><canvas id="revenueChart"></canvas></div>' : empty('No data in this range.', 'wallet')}</div>
+      <div class="card-head">
+        <h2>${esc(chartTitle)}</h2>
+        <span class="meta">${esc(chartMeta)}</span>
+      </div>
+      <div class="card-body">
+        ${daily.length ? '<div class="chart-box"><canvas id="revenueChart"></canvas></div>' : empty('No revenue data in this range.', 'wallet')}
+      </div>
     </div>
     <div class="grid cols-even section">
       <div class="card">
-        <div class="card-head"><h2>Busy hours</h2><span class="meta">Average PCs in active use</span></div>
-        <div class="card-body">${heatmap}</div>
+        <div class="card-head">
+          <h2>Revenue by program / game</h2>
+          <span class="meta">What customers are paying to use</span>
+        </div>
+        ${gamesTable}
       </div>
       <div class="card">
-        <div class="card-head"><h2>By computer</h2></div>
-        ${perPc.length ? `<div class="table-wrap"><table class="table">
-          <thead><tr><th>PC</th><th class="num">Active</th><th class="num">Utilisation</th><th>Share</th><th class="num">Estimate</th></tr></thead>
-          <tbody>${perPc.map((p, i) => `<tr>
-            <td class="${i === 0 ? 'strong' : ''}">${esc(p.pc)}</td><td class="num">${fmtMinutes(p.active)}</td>
-            <td class="num">${fmtPct(p.on ? p.active / p.on : 0)}</td>
-            <td style="width:22%"><div class="bar-track"><div class="bar-fill" style="width:${revenue ? (p.revenue / revenue) * 100 : 0}%;background:${seriesColor(pcs.indexOf(p.pc))}"></div></div></td>
-            <td class="num strong">${fmtMoney(p.revenue)}</td>
-          </tr>`).join('')}</tbody>
-        </table></div>` : empty('No data.', 'monitor')}
+        <div class="card-head">
+          <h2>Revenue by computer</h2>
+          <span class="meta">Earnings and efficiency per station</span>
+        </div>
+        ${pcTable}
       </div>
     </div>
-    <div class="alert section">${icon('info')}<div><b>How this is estimated:</b> minutes a program other than Chromatic Menu was in the foreground, at ${esc(rateText())}. The coin timer only turns off the monitor, so a game left open after time runs out still counts.</div></div>`;
+    ${days >= 7 ? `
+    <div class="card section">
+      <div class="card-head">
+        <h2>Busy hours heatmap</h2>
+        <span class="meta">Average PCs in active use by day and hour</span>
+      </div>
+      <div class="card-body">${heatmap}</div>
+    </div>` : ''}
+    <div class="alert section">
+      ${icon('info')}
+      <div>
+        <b>How revenue is estimated:</b> Active minutes with a game or application in the foreground, at <b>${esc(rateText())}</b>.
+        Coin timers cut power to monitors only; any active game left open counts towards customer utilisation. Rates and currency can be configured in <b>Settings</b>.
+      </div>
+    </div>`;
 
-  if (daily.length) {
+  if (daily.length && chartDatasets.length) {
     makeChart(root.querySelector('#revenueChart'), {
       type: 'bar',
       data: {
-        labels: dayList.map(d => fmtDay(d)),
-        datasets: pcs.map((pc, i) => ({
-          label: pc,
-          data: dayList.map(d => Math.round(moneyFromMinutes(byDayPc.get(`${d}|${pc}`)?.minutes_active || 0))),
-          backgroundColor: seriesColor(i),
-          borderRadius: 3,
-          maxBarThickness: 34
-        }))
+        labels: chartLabels,
+        datasets: chartDatasets
       },
       options: {
         plugins: {
           legend: { position: 'bottom', labels: { boxWidth: 10, boxHeight: 10, padding: 16, color: cssVar('--text-2') } },
-          tooltip: { callbacks: { label: (c) => ` ${c.dataset.label}: ${fmtMoney(c.raw)}` } }
+          tooltip: {
+            callbacks: {
+              label: (c) => ` ${c.dataset.label}: ${fmtMoney(c.raw)}`
+            }
+          }
         },
         scales: {
           x: { stacked: true, grid: { display: false } },
-          y: { stacked: true, beginAtZero: true, ticks: { callback: (v) => fmtMoney(v) } }
+          y: {
+            stacked: true,
+            beginAtZero: true,
+            suggestedMax: 5,
+            ticks: {
+              precision: 0,
+              callback: (v) => Number.isInteger(v) ? fmtMoney(v, { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : null
+            }
+          }
         }
       }
     });
@@ -516,7 +728,7 @@ export async function renderRequests(root, filter, onChanged) {
           <div>
             <div class="title">${esc(r.title)}</div>
             ${r.description ? `<div class="desc">${esc(r.description)}</div>` : ''}
-            <div class="meta"><span>${esc(r.pc_name)}</span><span>${esc(r.menu_name)}</span><span>${esc(fmtDateTime(r.created_at))}</span></div>
+            <div class="meta"><span class="strong">${esc(r.pc_name)}</span>${r.menu_name ? `<span class="table-shop" style="display:inline-flex">${icon('store')}<span>${esc(r.menu_name)}</span></span>` : ''}<span>${esc(fmtDateTime(r.created_at))}</span></div>
           </div>
           <div class="side"><span class="badge ${esc(r.status)}">${esc(label(r.status))}</span><div class="actions">${actions(r)}</div></div>
         </li>`).join('')}
@@ -575,6 +787,10 @@ export function renderSettings(root, ctx) {
       <div class="card-body">
         <div class="eyebrow">Supabase project</div>
         <div class="mono" style="margin:4px 0 14px;word-break:break-all">${esc(ctx.url)}</div>
+        <div class="eyebrow">Connected shop(s)</div>
+        <div style="margin:4px 0 14px;font-weight:500;display:flex;align-items:center;gap:6px">
+          ${icon('store')}<span>${esc(getAllShops().join(', ') || 'Waiting for computer telemetry...')}</span>
+        </div>
         <div class="eyebrow">Signed in as</div>
         <div style="margin:4px 0 18px;font-weight:500">${esc(ctx.email || '')}</div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
