@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("ChromaticTelemetry")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.4.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.4+42244f76468f4fcb5d1d985650631cd994419b7a")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.4+d335d2243ceeab8bbf06cf5442672b435fb6fb53")]
 [assembly: System.Reflection.AssemblyProductAttribute("ChromaticTelemetry")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ChromaticTelemetry")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.4.0")]

@@ -17,16 +17,17 @@ namespace ChromaticTelemetry
         public string MenuName { get; private set; }
         public int IntervalSeconds { get; private set; }
 
+        public bool HasProject => SupabaseUrl != null && SupabaseAnonKey != null;
+
         // Heartbeats are only sent on PCs the technician has set up to start
-        // the launcher with Windows, and only while telemetry is switched on.
-        public bool ShouldSend => StartWithWindows && TelemetryEnabled;
+        // the launcher with Windows, with telemetry switched on and a Supabase
+        // project configured.
+        public bool ShouldSend => StartWithWindows && TelemetryEnabled && HasProject;
 
         public static ServiceSettings Disabled()
         {
             return new ServiceSettings
             {
-                SupabaseUrl = TelemetryDefaults.SupabaseUrl,
-                SupabaseAnonKey = TelemetryDefaults.SupabaseAnonKey,
                 MenuName = TelemetryDefaults.DefaultMenuName,
                 IntervalSeconds = TelemetryDefaults.DefaultIntervalSeconds
             };
@@ -119,8 +120,8 @@ namespace ChromaticTelemetry
             {
                 StartWithWindows = file.StartWithWindows,
                 TelemetryEnabled = telemetry.Enabled,
-                SupabaseUrl = TelemetryDefaults.ResolveUrl(telemetry.SupabaseUrl),
-                SupabaseAnonKey = TelemetryDefaults.ResolveAnonKey(telemetry.SupabaseAnonKey),
+                SupabaseUrl = TelemetryDefaults.NormalizeUrl(telemetry.SupabaseUrl),
+                SupabaseAnonKey = TelemetryDefaults.NormalizeKey(telemetry.SupabaseAnonKey),
                 MenuName = TelemetryDefaults.Truncate(file.Branding?.ShopName, TelemetryDefaults.MaxNameLength, TelemetryDefaults.DefaultMenuName),
                 IntervalSeconds = TelemetryDefaults.ClampInterval(telemetry.HeartbeatIntervalSeconds)
             };

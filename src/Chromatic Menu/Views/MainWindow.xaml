@@ -1656,21 +1656,18 @@
                                                 <TextBlock Text="Start with Windows is currently off, so this PC sends nothing."
                                                            FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource Brush.Warning}" TextWrapping="Wrap" Margin="0,4,0,0"
                                                            Visibility="{Binding StartWithWindows, Converter={StaticResource InverseBoolToVis}}" />
+                                                <TextBlock Text="No Supabase project is set up yet, so this PC sends nothing and Request a Game is hidden."
+                                                           FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource Brush.Warning}" TextWrapping="Wrap" Margin="0,4,0,0"
+                                                           Visibility="{Binding IsTelemetryConfigured, Converter={StaticResource InverseBoolToVis}}" />
                                             </StackPanel>
                                         </Grid>
                                     </Border>
 
                                     <!-- Supabase URL -->
                                     <TextBlock Text="Supabase Project URL" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource Brush.TextSecondary}" Margin="0,0,0,4" />
-                                    <Grid Margin="0,0,0,12">
-                                        <TextBox x:Name="TelemetryUrlBox" Text="{Binding TelemetryUrlInput, UpdateSourceTrigger=PropertyChanged}"
-                                                 FontSize="13" Padding="8,6" Background="{DynamicResource Brush.Background}"
-                                                 Foreground="{DynamicResource Brush.TextPrimary}" BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1" />
-                                        <TextBlock Text="{Binding DefaultSupabaseUrl, StringFormat='Default: {0}'}" IsHitTestVisible="False"
-                                                   FontSize="12.5" Foreground="{DynamicResource Brush.TextSecondary}" Opacity="0.7"
-                                                   Margin="10,0,0,0" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
-                                                   Visibility="{Binding TelemetryUrlInput, Converter={StaticResource NotNullToVis}}" />
-                                    </Grid>
+                                    <TextBox Text="{Binding TelemetryUrlInput, UpdateSourceTrigger=PropertyChanged}"
+                                             FontSize="13" Padding="8,6" Margin="0,0,0,12" Background="{DynamicResource Brush.Background}"
+                                             Foreground="{DynamicResource Brush.TextPrimary}" BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1" />
 
                                     <!-- Anon key -->
                                     <Grid Margin="0,0,0,4">
@@ -1693,11 +1690,8 @@
                                                  FontSize="12" Padding="8,6" Background="{DynamicResource Brush.Background}"
                                                  Foreground="{DynamicResource Brush.TextPrimary}" BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1"
                                                  Visibility="{Binding IsChecked, ElementName=ShowTelemetryKeyCheckBox, Converter={StaticResource BoolToVis}}" />
-                                        <TextBlock Text="Default key" IsHitTestVisible="False" FontSize="12.5" Foreground="{DynamicResource Brush.TextSecondary}" Opacity="0.7"
-                                                   Margin="10,0,0,0" VerticalAlignment="Center"
-                                                   Visibility="{Binding TelemetryKeyInput, Converter={StaticResource NotNullToVis}}" />
                                     </Grid>
-                                    <TextBlock Text="Leave the URL and key empty to use the built-in defaults. Never use the service_role key."
+                                    <TextBlock Text="Find both in Supabase under Project Settings, API. Never use the service_role key."
                                                FontSize="11.5" Foreground="{DynamicResource Brush.TextSecondary}" TextWrapping="Wrap" Margin="0,0,0,12" />
 
                                     <!-- Interval -->
@@ -1723,8 +1717,9 @@
                                                 <TextBlock Text="Test connection" VerticalAlignment="Center" />
                                             </StackPanel>
                                         </Button>
-                                        <Button Content="Reset to default" Style="{StaticResource BaseButtonStyle}" Padding="12,7"
-                                                Command="{Binding ResetTelemetryDefaultsCommand}" />
+                                        <Button Content="Clear" Style="{StaticResource BaseButtonStyle}" Padding="12,7"
+                                                Command="{Binding ClearTelemetryProjectCommand}"
+                                                ToolTip="Remove the Supabase URL and key from this PC" />
                                     </StackPanel>
                                     <TextBlock Text="{Binding TelemetrySettingsError}" Foreground="{DynamicResource Brush.Danger}" FontSize="12" TextWrapping="Wrap" Margin="0,0,0,4"
                                                Visibility="{Binding TelemetrySettingsError, Converter={StaticResource BoolToVis}}" />

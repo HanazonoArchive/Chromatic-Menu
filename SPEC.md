@@ -280,6 +280,7 @@ Full details: `documentation/TELEMETRY-SPEC.md`. Summary:
 
 - A Windows service, **ChromaticTelemetry** (LocalSystem, automatic start, no UI), sends one heartbeat per interval (default 60 s, configurable 30–600 s) to Supabase: timestamp, PC name, shop name (`branding.shopName`), foreground program name, and interval. It sends only when **Start with Windows** and **telemetry** are both enabled. Failed sends are buffered **in memory only** (max 720 rows) and flushed oldest-first in one batch on the next success.
 - The launcher reports the foreground program's name to the service over the named pipe `ChromaticTelemetry.Pipe`. Built-in Windows programs are reported as `Windows`; the launcher and desktop as `Chromatic Menu`. Window titles, paths, usernames, IPs and hardware IDs are never sent.
+- There is **no built-in Supabase project**: heartbeats and game requests need a URL and anon key, set on the Settings **Telemetry** page or with `tools/ChromaticMenu-DataTool.bat` option [2], which writes only the `telemetry` block of config.json.
 - Settings has a **Telemetry** page (enable, Supabase URL and anon key, interval, test connection, service status). Changes apply through a pipe `reload` message; no admin rights are needed.
 - Technical tools include **Request a Game** (title + description, sent to Supabase, 5-minute cooldown). No password is required.
 - A static dashboard website in `docs/` (GitHub Pages) reads the data through Supabase Auth and RLS-protected RPC functions.

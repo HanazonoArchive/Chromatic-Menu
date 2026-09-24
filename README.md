@@ -156,7 +156,7 @@ Uninstalling from **Windows Settings > Installed Apps** removes the program and 
 The v1.0.3 installer deletes the `data` folder when it is removed, and an update removes it. For this one upgrade, back up first on each PC (booted Thawed):
 1. Run `tools\ChromaticMenu-DataTool.bat` and choose **[0] Backup**.
 2. Update through **Settings > About > Check for Updates**.
-3. Run the tool again and choose **[1] Restore**.
+3. Run the tool again and choose **[1] Restore**, then **[2] Set up Supabase**.
 
 Later updates (1.0.4 and newer) keep the data without the tool.
 
@@ -165,14 +165,16 @@ Later updates (1.0.4 and newer) keep the data without the tool.
 ## Telemetry & Dashboard
 
 ### What is sent
-When **Start with Windows** (Settings > General) and **telemetry** (Settings > Telemetry) are both on, the `ChromaticTelemetry` service sends one heartbeat per interval (default 60 seconds) with:
+Chromatic Menu has **no built-in Supabase project**: nothing is sent until a Supabase URL and anon key are set, either in **Settings > Telemetry** or with option **[2] Set up Supabase** in `tools\ChromaticMenu-DataTool.bat` (the .bat holds the default project to offer, at the top of the file).
+
+When a project is set, and **Start with Windows** (Settings > General) and **telemetry** (Settings > Telemetry) are both on, the `ChromaticTelemetry` service sends one heartbeat per interval (default 60 seconds) with:
 - the time, the PC name, the shop name, the heartbeat interval, and
 - the name of the program in the foreground (for example `Google Chrome`). Built-in Windows programs are reported as `Windows`; the launcher and the desktop as `Chromatic Menu`.
 
 **Never sent:** window titles, file paths, Windows usernames, IP or MAC addresses, or hardware IDs. If the internet is down, heartbeats wait in memory (never on disk) and are sent together when it returns.
 
 ### Turning it off
-Open **Settings > Telemetry** and untick **Enable telemetry**, or turn off **Start with Windows**. The change applies within seconds; no restart or admin rights are needed. The Request a Game button is hidden while telemetry is off.
+Open **Settings > Telemetry** and untick **Enable telemetry**, or turn off **Start with Windows**. The change applies within seconds; no restart or admin rights are needed. The Request a Game button is hidden while telemetry is off or no project is set.
 
 ### Setting up Supabase and the dashboard
 1. Follow the setup guide in [`docs/setup.html`](docs/setup.html) (also available on the deployed site): create a Supabase project, run [`docs/supabase/schema.sql`](docs/supabase/schema.sql), turn off public sign-ups, and create a dashboard user.

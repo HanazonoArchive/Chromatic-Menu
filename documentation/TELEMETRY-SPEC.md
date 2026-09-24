@@ -54,7 +54,7 @@ The launcher runs as a **standard user** (`asInvoker`) and never elevates.
 
 ### 0.4 Default Supabase credentials (provided by the owner)
 
-Put these in **one** shared file (§3.1), `src/Shared/TelemetryDefaults.cs`:
+**Changed after implementation:** the app has **no built-in project**. Empty URL/key means "not set up": nothing is sent and Request a Game is hidden. The owner's project below is preset only in `tools/ChromaticMenu-DataTool.bat` (variables `DEFAULT_SUPABASE_URL` / `DEFAULT_SUPABASE_KEY`), whose option **[2] Set up Supabase** writes it into the `telemetry` block of `config.json` (launcher force-closed first, other fields verified unchanged, service restarted). The values:
 
 ```
 DefaultSupabaseUrl     = "https://iqzssuggmcqburqrpvtr.supabase.co"

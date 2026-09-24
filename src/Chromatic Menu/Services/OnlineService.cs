@@ -27,6 +27,11 @@ namespace ChromaticMenu.Services
 
         public async Task<string> SendGameRequestAsync(TelemetrySettings settings, string menuName, string title, string description)
         {
+            if (!TelemetryDefaults.IsConfigured(settings))
+            {
+                return "Requests are not set up on this PC yet. Please tell the staff.";
+            }
+
             var body = new
             {
                 pc_name = TelemetryDefaults.Truncate(Environment.MachineName, TelemetryDefaults.MaxNameLength, "Unknown PC"),
@@ -36,8 +41,8 @@ namespace ChromaticMenu.Services
             };
 
             var result = await _client.InsertAsync(
-                TelemetryDefaults.ResolveUrl(settings?.SupabaseUrl),
-                TelemetryDefaults.ResolveAnonKey(settings?.SupabaseAnonKey),
+                TelemetryDefaults.NormalizeUrl(settings.SupabaseUrl),
+                TelemetryDefaults.NormalizeKey(settings.SupabaseAnonKey),
                 "game_requests",
                 JsonConvert.SerializeObject(new[] { body })).ConfigureAwait(false);
 
@@ -63,8 +68,14 @@ namespace ChromaticMenu.Services
 
         public async Task<string> TestConnectionAsync(string url, string anonKey)
         {
-            var result = await _client.CheckConnectionAsync(TelemetryDefaults.ResolveUrl(url), TelemetryDefaults.ResolveAnonKey(anonKey))
-                                      .ConfigureAwait(false);
+            url = TelemetryDefaults.NormalizeUrl(url);
+            anonKey = TelemetryDefaults.NormalizeKey(anonKey);
+            if (url == null || anonKey == null)
+            {
+                return "Enter the Supabase project URL and anon key first.";
+            }
+
+            var result = await _client.CheckConnectionAsync(url, anonKey).ConfigureAwait(false);
             if (result.Success) return null;
             if (result.StatusCode == 401 || result.StatusCode == 403) return "The anon key was rejected by Supabase.";
             if (result.StatusCode == 0) return "Could not reach Supabase: " + result.Error;

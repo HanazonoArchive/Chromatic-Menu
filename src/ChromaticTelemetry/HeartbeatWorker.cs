@@ -70,8 +70,8 @@ namespace ChromaticTelemetry
                 _timer.Change(interval, interval);
             }
             _log.Info($"Settings applied: sending={(settings.ShouldSend ? "on" : "off")} " +
-                      $"(startWithWindows={settings.StartWithWindows}, telemetry={settings.TelemetryEnabled}), " +
-                      $"interval={settings.IntervalSeconds}s, shop='{settings.MenuName}', url={settings.SupabaseUrl}");
+                      $"(startWithWindows={settings.StartWithWindows}, telemetry={settings.TelemetryEnabled}, project={(settings.HasProject ? "set" : "not set")}), " +
+                      $"interval={settings.IntervalSeconds}s, shop='{settings.MenuName}', url={settings.SupabaseUrl ?? "(none)"}");
             _loggedDisabled = false;
         }
 
@@ -131,7 +131,7 @@ namespace ChromaticTelemetry
                 }
                 if (!_loggedDisabled)
                 {
-                    _log.Info("Sending is off (Start with Windows or telemetry disabled). Waiting for a reload.");
+                    _log.Info("Sending is off (Start with Windows or telemetry disabled, or no Supabase URL/key set). Waiting for a reload.");
                     _loggedDisabled = true;
                 }
                 return;

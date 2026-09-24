@@ -8,7 +8,7 @@ namespace ChromaticMenu.Shared
         [JsonProperty("enabled")]
         public bool Enabled { get; set; } = true;
 
-        // Null or empty means "use the built-in default" from TelemetryDefaults.
+        // Null or empty means "not set up": nothing is sent until both are filled in.
         [JsonProperty("supabaseUrl")]
         public string SupabaseUrl { get; set; }
 

@@ -794,7 +794,8 @@ namespace ChromaticMenu.ViewModels
             set => SetProperty(ref _telemetryServiceStatus, value);
         }
 
-        public string DefaultSupabaseUrl => TelemetryDefaults.SupabaseUrl;
+        // No project is built in; Request a Game and heartbeats need both values.
+        public bool IsTelemetryConfigured => TelemetryDefaults.IsConfigured(_configService.Current?.Telemetry);
         public string TelemetryIntervalRangeText => $"{TelemetryDefaults.MinIntervalSeconds} to {TelemetryDefaults.MaxIntervalSeconds} seconds";
 
         // Request a Game Dialog State
@@ -898,7 +899,7 @@ namespace ChromaticMenu.ViewModels
         public RelayCommand CheckForUpdatesCommand { get; }
         public RelayCommand ApplyUpdateCommand { get; }
         public RelayCommand ApplyTelemetrySettingsCommand { get; }
-        public RelayCommand ResetTelemetryDefaultsCommand { get; }
+        public RelayCommand ClearTelemetryProjectCommand { get; }
         public RelayCommand TestTelemetryConnectionCommand { get; }
         public RelayCommand RefreshTelemetryStatusCommand { get; }
         public RelayCommand SubmitGameRequestCommand { get; }
@@ -925,7 +926,7 @@ namespace ChromaticMenu.ViewModels
             CheckForUpdatesCommand = new RelayCommand(async () => await CheckForUpdatesAsync());
             ApplyUpdateCommand = new RelayCommand(async () => await ApplyUpdateAsync());
             ApplyTelemetrySettingsCommand = new RelayCommand(ApplyTelemetrySettings);
-            ResetTelemetryDefaultsCommand = new RelayCommand(ResetTelemetryDefaults);
+            ClearTelemetryProjectCommand = new RelayCommand(ClearTelemetryProject);
             TestTelemetryConnectionCommand = new RelayCommand(async () => await TestTelemetryConnectionAsync());
             RefreshTelemetryStatusCommand = new RelayCommand(RefreshTelemetryPage);
             SubmitGameRequestCommand = new RelayCommand(async () => await SubmitGameRequestAsync());
@@ -1274,8 +1275,9 @@ namespace ChromaticMenu.ViewModels
             {
                 TechnicalTools.Add(tool);
             }
-            // Requests go to Supabase, so the tool is hidden when telemetry is off.
-            if (_telemetryEnabled)
+            // Requests go to Supabase, so the tool is hidden when telemetry is off
+            // or no Supabase project is configured on this PC.
+            if (_telemetryEnabled && IsTelemetryConfigured)
             {
                 TechnicalTools.Add(ToolLaunchService.RequestGameTool);
             }
@@ -2654,6 +2656,7 @@ namespace ChromaticMenu.ViewModels
             TelemetryUrlInput = telemetry.SupabaseUrl ?? string.Empty;
             TelemetryKeyInput = telemetry.SupabaseAnonKey ?? string.Empty;
             TelemetryIntervalInput = TelemetryDefaults.ClampInterval(telemetry.HeartbeatIntervalSeconds).ToString();
+            OnPropertyChanged(nameof(IsTelemetryConfigured));
         }
 
         private void RefreshTelemetryPage()
@@ -2677,7 +2680,14 @@ namespace ChromaticMenu.ViewModels
                 !url.StartsWith("https://", StringComparison.OrdinalIgnoreCase) &&
                 !url.StartsWith("http://", StringComparison.OrdinalIgnoreCase))
             {
-                TelemetrySettingsError = "The Supabase URL must start with https:// (leave it empty to use the default).";
+                TelemetrySettingsError = "The Supabase URL must start with https://";
+                return;
+            }
+
+            string key = (TelemetryKeyInput ?? string.Empty).Trim();
+            if ((url.Length == 0) != (key.Length == 0))
+            {
+                TelemetrySettingsError = "Enter both the Supabase URL and the anon key, or leave both empty.";
                 return;
             }
 
@@ -2691,7 +2701,6 @@ namespace ChromaticMenu.ViewModels
             var telemetry = _configService.Current?.Telemetry;
             if (telemetry == null) return;
 
-            string key = (TelemetryKeyInput ?? string.Empty).Trim();
             telemetry.SupabaseUrl = url.Length == 0 ? null : url;
             telemetry.SupabaseAnonKey = key.Length == 0 ? null : key;
             telemetry.HeartbeatIntervalSeconds = interval;
@@ -2700,14 +2709,17 @@ namespace ChromaticMenu.ViewModels
             TelemetryIntervalInput = interval.ToString();
 
             SaveConfig();
-            TelemetrySettingsMessage = "Saved. The telemetry service applies it within a few seconds.";
+            OnPropertyChanged(nameof(IsTelemetryConfigured));
+            LoadTools();
+            TelemetrySettingsMessage = url.Length == 0
+                ? "Saved. No Supabase project is set, so nothing is sent from this PC."
+                : "Saved. The telemetry service applies it within a few seconds.";
         }
 
-        private void ResetTelemetryDefaults()
+        private void ClearTelemetryProject()
         {
             TelemetryUrlInput = string.Empty;
             TelemetryKeyInput = string.Empty;
-            TelemetryIntervalInput = TelemetryDefaults.DefaultIntervalSeconds.ToString();
             ApplyTelemetrySettings();
         }
 

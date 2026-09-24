@@ -4,10 +4,6 @@ namespace ChromaticMenu.Shared
 {
     public static class TelemetryDefaults
     {
-        // The anon key is public by design; Supabase Row Level Security only lets it insert.
-        public const string SupabaseUrl = "https://iqzssuggmcqburqrpvtr.supabase.co";
-        public const string SupabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlxenNzdWdnbWNxYnVycXJwdnRyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAyMjYyNzQsImV4cCI6MjEwNTgwMjI3NH0.WPFeMFK4tRpnSksSO3tal9QhY0dBs5UwGVgAUtGIEps";
-
         public const string ServiceName = "ChromaticTelemetry";
         public const string PipeName = "ChromaticTelemetry.Pipe";
 
@@ -33,14 +29,21 @@ namespace ChromaticMenu.Shared
             return Math.Max(MinIntervalSeconds, Math.Min(MaxIntervalSeconds, seconds));
         }
 
-        public static string ResolveUrl(string configuredUrl)
+        // There is no built-in Supabase project: nothing is sent until a URL and
+        // anon key are configured (Settings > Telemetry or the DataTool).
+        public static string NormalizeUrl(string url)
         {
-            return string.IsNullOrWhiteSpace(configuredUrl) ? SupabaseUrl : configuredUrl.Trim().TrimEnd('/');
+            return string.IsNullOrWhiteSpace(url) ? null : url.Trim().TrimEnd('/');
         }
 
-        public static string ResolveAnonKey(string configuredKey)
+        public static string NormalizeKey(string key)
         {
-            return string.IsNullOrWhiteSpace(configuredKey) ? SupabaseAnonKey : configuredKey.Trim();
+            return string.IsNullOrWhiteSpace(key) ? null : key.Trim();
+        }
+
+        public static bool IsConfigured(TelemetrySettings settings)
+        {
+            return settings != null && NormalizeUrl(settings.SupabaseUrl) != null && NormalizeKey(settings.SupabaseAnonKey) != null;
         }
 
         public static string Truncate(string value, int maxLength, string fallback)
