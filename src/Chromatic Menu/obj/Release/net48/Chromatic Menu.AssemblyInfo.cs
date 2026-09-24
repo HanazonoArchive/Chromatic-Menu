@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Chromatic Menu")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.6.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.6+f223f024387bb6a33f4b3d667f10b9dba0532ec3")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.6+9963ed0b5e1b2d016b986d7ecbdff917422ba6d6")]
 [assembly: System.Reflection.AssemblyProductAttribute("Chromatic Menu")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Chromatic Menu")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.6.0")]
