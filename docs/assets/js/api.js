@@ -60,6 +60,20 @@ export const api = {
   timeline: (day) => rpc('get_day_timeline', { p_day: day }),
   usage: (from, to) => rpc('get_usage', { p_from: from, p_to: to }),
   heatmap: (from, to) => rpc('get_hourly_heatmap', { p_from: from, p_to: to }),
+  sessionStats: async (from, to) => {
+    try {
+      return await rpc('get_session_stats', { p_from: from, p_to: to });
+    } catch {
+      return null;
+    }
+  },
+  networkIncidents: async (day) => {
+    try {
+      return await rpc('get_network_incidents', { p_day: day });
+    } catch {
+      return null;
+    }
+  },
 
   async requests(status) {
     let q = client.from('game_requests').select('*').order('created_at', { ascending: false }).limit(500);

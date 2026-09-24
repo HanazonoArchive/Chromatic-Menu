@@ -171,13 +171,27 @@ export async function renderOverview(root) {
         const d = byPc.get(s.pc_name) || { minutes_on: 0, minutes_active: 0 };
         const idle = IDLE_PROGRAMS.has(s.last_program);
         const shop = s.menu_name || getShopForPc(s.pc_name) || 'PisoNet';
+        const expShare = status.length ? (1 / status.length) : 0;
+        const actShare = activeTotal > 0 ? (d.minutes_active / activeTotal) : 0;
+        const parityRatio = expShare > 0 ? (actShare / expShare) : 1;
+        let parityBadge = '';
+        if (activeTotal > 0 && status.length > 2) {
+          if (parityRatio > 1.4) {
+            parityBadge = `<span class="badge heavy" title="High player workload today (+${Math.round((parityRatio - 1) * 100)}% vs avg)">Heavy</span>`;
+          } else if (parityRatio < 0.6) {
+            parityBadge = `<span class="badge neglected" title="Low player workload today (-${Math.round((1 - parityRatio) * 100)}% vs avg)">Low</span>`;
+          }
+        }
         return `<div class="card pc ${s.is_online ? 'on' : 'off'}">
           <div class="pc-top">
             <div class="pc-identity">
               <span class="name" title="${esc(s.pc_name)}">${esc(s.pc_name)}</span>
               <span class="pc-shop" title="Shop: ${esc(shop)}">${icon('store')}<span>${esc(shop)}</span></span>
             </div>
-            <span class="badge ${s.is_online ? 'online' : 'offline'}"><span class="dot"></span>${s.is_online ? 'Online' : 'Offline'}</span>
+            <div style="display:flex;align-items:center;gap:4px">
+              ${parityBadge}
+              <span class="badge ${s.is_online ? 'online' : 'offline'}"><span class="dot"></span>${s.is_online ? 'Online' : 'Offline'}</span>
+            </div>
           </div>
           <div class="pc-now">
             <div class="eyebrow">${s.is_online ? 'Now using' : 'Last used'}</div>
@@ -218,9 +232,13 @@ export async function renderOverview(root) {
 // ---------------------------------------------------------------------------
 
 export async function renderTimeline(root, day) {
-  let rows, status;
+  let rows, status, networkInc;
   try {
-    [rows, status] = await Promise.all([api.timeline(day), api.pcStatus()]);
+    [rows, status, networkInc] = await Promise.all([
+      api.timeline(day),
+      api.pcStatus(),
+      api.networkIncidents ? api.networkIncidents(day) : Promise.resolve([])
+    ]);
   } catch (e) {
     root.innerHTML = errorBox(e);
     return;
@@ -243,12 +261,73 @@ export async function renderTimeline(root, day) {
   const gridLines = ticks.slice(1, -1).map(h => `<div class="tl-grid" style="left:${(h / 24) * 100}%"></div>`).join('');
   const nowMarker = isToday ? `<div class="tl-now" style="left:${pct(Date.now())}%" data-tip="Now ${fmtTime(Date.now())}"></div>` : '';
 
+  // Feature 4: Operating Envelope (First PC boot to final shutdown)
+  const allClampedSegs = rows.map(s => ({
+    ...s,
+    a: clamp(Date.parse(s.seg_start)),
+    b: clamp(Date.parse(s.seg_end))
+  }));
+  const activeOnlySegs = allClampedSegs.filter(s => s.kind === 'active');
+  const firstBootMs = allClampedSegs.length ? Math.min(...allClampedSegs.map(s => s.a)) : null;
+  const lastShutdownMs = allClampedSegs.length ? Math.max(...allClampedSegs.map(s => s.b)) : null;
+  const firstActiveMs = activeOnlySegs.length ? Math.min(...activeOnlySegs.map(s => s.a)) : null;
+  const lastActiveMs = activeOnlySegs.length ? Math.max(...activeOnlySegs.map(s => s.b)) : null;
+  const operatingSpanMins = (firstBootMs && lastShutdownMs) ? Math.max(0, Math.round((lastShutdownMs - firstBootMs) / 60000)) : 0;
+
+  // Feature 1: Concurrent Fleet Saturation (96 15-min slices across 24 hours)
+  const totalFleetSize = Math.max(1, pcs.length);
+  const slices = Array.from({ length: 96 }, (_, i) => {
+    const t = start + i * 15 * 60000;
+    const activeCount = pcs.filter(pc =>
+      (segsByPc.get(pc) || []).some(s => s.kind === 'active' && clamp(Date.parse(s.seg_start)) <= t && clamp(Date.parse(s.seg_end)) > t)
+    ).length;
+    return { t, count: activeCount };
+  });
+
+  const maxConcurrent = Math.max(0, ...slices.map(s => s.count));
+  const peakSlice = slices.find(s => s.count === maxConcurrent && s.count > 0);
+  const peakTimeStr = peakSlice ? fmtTime(peakSlice.t) : (maxConcurrent > 0 ? 'Peak' : 'No active play');
+  const fullHouseSlices = slices.filter(s => s.count === totalFleetSize && s.count > 0).length;
+  const fullHouseMins = fullHouseSlices * 15;
+  const highLoadSlices = slices.filter(s => s.count >= Math.ceil(totalFleetSize * 0.75) && s.count > 0).length;
+  const highLoadMins = highLoadSlices * 15;
+  const lowDemandSlices = slices.filter(s => s.count <= Math.floor(totalFleetSize * 0.25) && (firstBootMs && s.t >= firstBootMs && s.t <= (lastShutdownMs || end))).length;
+  const lowDemandMins = lowDemandSlices * 15;
+
+  const hourlyLabels = Array.from({ length: 24 }, (_, h) => {
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    const h12 = h % 12 === 0 ? 12 : h % 12;
+    return `${h12} ${ampm}`;
+  });
+  const hourlyMaxActive = Array.from({ length: 24 }, (_, h) => {
+    const hStart = start + h * 3600000;
+    const hEnd = hStart + 3600000;
+    const hSlices = slices.filter(s => s.t >= hStart && s.t < hEnd);
+    return hSlices.length ? Math.max(...hSlices.map(s => s.count)) : 0;
+  });
+
+  // Feature 5: Power Cycles & Unplanned Mid-Game Stops
+  let totalFleetBoots = 0;
+  let totalUnplannedStops = 0;
+
   const pcRows = pcs.map(pc => {
     const segs = (segsByPc.get(pc) || []).map(s => ({ ...s, a: clamp(Date.parse(s.seg_start)), b: clamp(Date.parse(s.seg_end)) }));
     const onMin = segs.reduce((m, s) => m + (s.b - s.a) / 60000, 0);
     const activeMin = segs.filter(s => s.kind === 'active').reduce((m, s) => m + (s.b - s.a) / 60000, 0);
     dayOn += onMin; dayActive += activeMin; if (segs.length) pcsUsed++;
     const boots = groupBy(segs, 'power_on');
+    totalFleetBoots += boots.size;
+
+    let pcUnplanned = 0;
+    for (const group of boots.values()) {
+      const sorted = group.sort((a, b) => a.b - b.b);
+      const last = sorted[sorted.length - 1];
+      if (last && last.kind === 'active') {
+        pcUnplanned++;
+      }
+    }
+    totalUnplannedStops += pcUnplanned;
+
     let longest = 0;
     for (const group of boots.values()) {
       longest = Math.max(longest, (Math.max(...group.map(s => s.b)) - Math.min(...group.map(s => s.a))) / 60000);
@@ -269,13 +348,25 @@ export async function renderTimeline(root, day) {
         <span>First on<b>${fmtTime(first)}</b></span>
         <span>${online ? 'Still on' : `Last off<b>${fmtTime(last)}</b>`}</span>
         <span>Power-ons<b>${boots.size}</b></span>
-        <span>Longest session<b>${fmtMinutes(longest)}</b></span>
+        <span>Longest sitting<b>${fmtMinutes(longest)}</b></span>
       </div>` : `<div class="tl-stats"><span>Off all day</span></div>`;
 
     const shop = statusByPc.get(pc)?.menu_name || getShopForPc(pc) || '';
+    const crashBadge = pcUnplanned > 0
+      ? `<span class="badge crash" title="Heartbeat ceased mid-game without exiting to menu">${icon('alert-triangle')}${pcUnplanned} mid-game stop${pcUnplanned > 1 ? 's' : ''}</span>`
+      : '';
+    const bootBadge = boots.size >= 4
+      ? `<span class="badge warn" title="High reboot frequency today">${boots.size} boots</span>`
+      : '';
+
     return `<div class="tl-row">
       <div class="tl-name">
-        <div class="n">${esc(pc)}${online ? '<span class="badge online"><span class="dot"></span>Online</span>' : ''}</div>
+        <div class="n">
+          ${esc(pc)}
+          ${online ? '<span class="badge online"><span class="dot"></span>Online</span>' : ''}
+          ${crashBadge}
+          ${bootBadge}
+        </div>
         ${shop ? `<div class="tl-shop" title="Shop: ${esc(shop)}">${icon('store')}<span>${esc(shop)}</span></div>` : ''}
       </div>
       <div class="tl-bar">${gridLines}${bars}${nowMarker}</div>
@@ -283,12 +374,122 @@ export async function renderTimeline(root, day) {
     </div>`;
   }).join('');
 
+  // Feature 4: Operating Envelope HTML
+  const envelopeHtml = firstBootMs ? `
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-head">
+        <h2>Operating envelope & staff schedule</h2>
+        <span class="meta">${operatingSpanMins > 0 ? `Open span ${fmtMinutes(operatingSpanMins)} &middot; ` : ''}Earliest power-on to final shutdown</span>
+      </div>
+      <div class="card-body">
+        <div class="envelope-grid">
+          <div class="envelope-item">
+            <div class="lbl">Store Opened</div>
+            <div class="val">${fmtTime(firstBootMs)}</div>
+            <div class="sub">First PC powered on</div>
+          </div>
+          <div class="envelope-item">
+            <div class="lbl">First Customer</div>
+            <div class="val">${firstActiveMs ? fmtTime(firstActiveMs) : 'No players'}</div>
+            <div class="sub">First game launched</div>
+          </div>
+          <div class="envelope-item">
+            <div class="lbl">Last Customer</div>
+            <div class="val">${lastActiveMs ? fmtTime(lastActiveMs) : 'None'}</div>
+            <div class="sub">Last game ended</div>
+          </div>
+          <div class="envelope-item">
+            <div class="lbl">Store Closed</div>
+            <div class="val">${lastShutdownMs ? (isToday && pcs.some(pc => statusByPc.get(pc)?.is_online) ? 'Still open' : fmtTime(lastShutdownMs)) : 'Off'}</div>
+            <div class="sub">Final PC shutdown</div>
+          </div>
+          <div class="envelope-item">
+            <div class="lbl">Customer Active Ratio</div>
+            <div class="val">${operatingSpanMins > 0 ? fmtPct(dayActive / operatingSpanMins) : '0%'}</div>
+            <div class="sub">${fmtMinutes(dayActive)} active / ${fmtMinutes(operatingSpanMins)} open</div>
+          </div>
+        </div>
+      </div>
+    </div>` : '';
+
+  // Feature 1: Fleet Saturation HTML
+  const saturationHtml = pcs.length ? `
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-head">
+        <h2>Concurrent player saturation</h2>
+        <span class="meta">Simultaneous active gaming load across 24 hours</span>
+      </div>
+      <div class="card-body">
+        <div class="envelope-grid" style="margin-bottom:16px">
+          <div class="envelope-item">
+            <div class="lbl">Peak Concurrent Load</div>
+            <div class="val">${maxConcurrent} <span class="subtle" style="font-size:12px">/ ${totalFleetSize} PCs</span></div>
+            <div class="sub">${maxConcurrent > 0 ? `${fmtPct(maxConcurrent / totalFleetSize)} peak at ${peakTimeStr}` : 'No active load'}</div>
+          </div>
+          <div class="envelope-item">
+            <div class="lbl">Full House (100% Load)</div>
+            <div class="val">${fmtMinutes(fullHouseMins)}</div>
+            <div class="sub">Every PC occupied</div>
+          </div>
+          <div class="envelope-item">
+            <div class="lbl">High Demand (&ge;75%)</div>
+            <div class="val">${fmtMinutes(highLoadMins)}</div>
+            <div class="sub">Rush & peak traffic window</div>
+          </div>
+          <div class="envelope-item">
+            <div class="lbl">Off-Peak Window (&le;25%)</div>
+            <div class="val">${fmtMinutes(lowDemandMins)}</div>
+            <div class="sub">Quiet hours while open</div>
+          </div>
+        </div>
+        <div class="chart-box sm"><canvas id="concurrencyChart"></canvas></div>
+      </div>
+    </div>` : '';
+
+  // Feature 6: Network & Outage Buffer HTML
+  const incidents = Array.isArray(networkInc) ? networkInc.filter(i => (i.delay_seconds || 0) >= 120) : [];
+  let networkHtml = '';
+  if (incidents.length === 0) {
+    networkHtml = `
+      <div class="alert ok section" style="margin-top:16px">
+        ${icon('wifi')}
+        <div><b>Network 100% Stable:</b> No buffered disconnects or ISP drops recorded for this day across all stations.</div>
+      </div>`;
+  } else {
+    const incItems = incidents.slice(0, 6).map(inc => {
+      const mins = Math.max(1, Math.round((inc.delay_seconds || 0) / 60));
+      return `
+        <div class="incident-row">
+          <div>
+            <span class="who">${esc(inc.pc_name)}</span>
+            <span class="subtle">&middot; buffered for about ${mins} minute${mins === 1 ? '' : 's'}</span>
+            ${inc.program ? `<span class="subtle">(in ${esc(inc.program)})</span>` : ''}
+          </div>
+          <span class="time">${fmtDateTime(inc.incident_time)}</span>
+        </div>`;
+    }).join('');
+
+    networkHtml = `
+      <div class="card section" style="margin-top:16px">
+        <div class="card-head">
+          <h2>Network & connectivity health</h2>
+          <span class="meta">${incidents.length} delayed buffer flush${incidents.length === 1 ? '' : 'es'}</span>
+        </div>
+        <div class="card-body">
+          <div class="hint" style="margin-top:0;margin-bottom:10px">When shop internet or a station cable drops, ChromaticTelemetry buffers heartbeats in memory and flushes them once reconnected.</div>
+          <div class="incident-list">${incItems}</div>
+        </div>
+      </div>`;
+  }
+
   root.innerHTML = `<div class="card stats" style="margin-top:0;margin-bottom:16px">
       ${stat('PCs used', `${pcsUsed}<span class="subtle" style="font-size:15px"> / ${pcs.length}</span>`, 'Turned on at least once', 'monitor')}
       ${stat('Active time', fmtMinutes(dayActive), 'All PCs combined', 'zap')}
-      ${stat('On time', fmtMinutes(dayOn), `${fmtPct(dayOn ? dayActive / dayOn : 0)} of it active`, 'power')}
+      ${stat('Fleet power cycles', `${totalFleetBoots} boots`, `${totalUnplannedStops} mid-game interrupt${totalUnplannedStops === 1 ? '' : 's'}`, 'power')}
       ${stat('Estimated revenue', fmtMoney(moneyFromMinutes(dayActive)), rateText(), 'wallet')}
     </div>
+    ${envelopeHtml}
+    ${saturationHtml}
     <div class="card">
       <div class="card-head">
         <h2>${esc(fmtDay(day, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }))}</h2>
@@ -303,7 +504,48 @@ export async function renderTimeline(root, day) {
         ${pcRows}
       </div>`}
     </div>
+    ${networkHtml}
     <p class="meta" style="margin-top:12px">Times in ${esc(TZ)}. A gap longer than two heartbeat intervals counts as the PC being off. Hover a bar for details.</p>`;
+
+  if (pcs.length && root.querySelector('#concurrencyChart')) {
+    makeChart(root.querySelector('#concurrencyChart'), {
+      type: 'line',
+      data: {
+        labels: hourlyLabels,
+        datasets: [{
+          label: 'Active PCs',
+          data: hourlyMaxActive,
+          borderColor: cssVar('--accent'),
+          backgroundColor: cssVar('--accent-soft'),
+          fill: true,
+          tension: 0.3,
+          pointRadius: 2,
+          pointHoverRadius: 5
+        }]
+      },
+      options: {
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: (c) => ` ${c.raw} of ${totalFleetSize} PCs active (${Math.round((c.raw / totalFleetSize) * 100)}% capacity)`
+            }
+          }
+        },
+        scales: {
+          x: { grid: { display: false } },
+          y: {
+            beginAtZero: true,
+            suggestedMax: totalFleetSize,
+            ticks: {
+              precision: 0,
+              stepSize: 1
+            }
+          }
+        }
+      }
+    });
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -311,9 +553,12 @@ export async function renderTimeline(root, day) {
 // ---------------------------------------------------------------------------
 
 export async function renderPrograms(root, range) {
-  let usage;
+  let usage, sessions;
   try {
-    usage = await api.usage(range.from, range.to);
+    [usage, sessions] = await Promise.all([
+      api.usage(range.from, range.to),
+      api.sessionStats ? api.sessionStats(range.from, range.to) : Promise.resolve(null)
+    ]);
   } catch (e) {
     root.innerHTML = errorBox(e);
     return;
@@ -332,6 +577,93 @@ export async function renderPrograms(root, range) {
   const perPc = [...groupBy(usage.filter(u => !NON_PROGRAMS.has(u.program)), 'pc_name')]
     .map(([pc, rows]) => ({ pc, total: sum(rows, 'minutes'), top: rows.sort((a, b) => b.minutes - a.minutes).slice(0, 3) }))
     .sort((a, b) => a.pc.localeCompare(b.pc));
+
+  // Feature 2: Contiguous Session Distributions HTML
+  let sessionsHtml = '';
+  if (sessions && sessions.length) {
+    const totalSessions = sum(sessions, 'session_count');
+    const allMinutes = sum(sessions, 'total_minutes');
+    const overallAvgMins = totalSessions > 0 ? Math.round(allMinutes / totalSessions) : 0;
+    const allQuick = sum(sessions, 'quick_count');
+    const allStd = sum(sessions, 'standard_count');
+    const allMarathon = sum(sessions, 'marathon_count');
+    const quickPct = totalSessions > 0 ? (allQuick / totalSessions) : 0;
+    const marathonPct = totalSessions > 0 ? (allMarathon / totalSessions) : 0;
+    const stdPct = totalSessions > 0 ? (allStd / totalSessions) : 0;
+
+    sessionsHtml = `
+      <div class="card section">
+        <div class="card-head">
+          <h2>Player session dynamics & retention</h2>
+          <span class="meta">Run-length distributions of unbroken game sittings</span>
+        </div>
+        <div class="card-body">
+          <div class="envelope-grid" style="margin-bottom:16px">
+            <div class="envelope-item">
+              <div class="lbl">Avg Sitting Duration</div>
+              <div class="val">${fmtMinutes(overallAvgMins)}</div>
+              <div class="sub">Across ${totalSessions} continuous sessions</div>
+            </div>
+            <div class="envelope-item">
+              <div class="lbl">Quick Drop-ins (&lt;20m)</div>
+              <div class="val">${fmtPct(quickPct)}</div>
+              <div class="sub">${allQuick} short sessions</div>
+            </div>
+            <div class="envelope-item">
+              <div class="lbl">Standard Play (20-60m)</div>
+              <div class="val">${fmtPct(stdPct)}</div>
+              <div class="sub">${allStd} standard sessions</div>
+            </div>
+            <div class="envelope-item">
+              <div class="lbl">Marathon Sittings (&gt;1h)</div>
+              <div class="val">${fmtPct(marathonPct)}</div>
+              <div class="sub">${allMarathon} deep gaming sessions</div>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Program / Game</th>
+                  <th class="num">Sessions</th>
+                  <th class="num">Avg Sitting</th>
+                  <th class="num">Median</th>
+                  <th class="num">Longest Run</th>
+                  <th style="width:24%">Duration Mix</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${sessions.slice(0, 10).map(s => {
+                  const sc = Number(s.session_count || 1);
+                  const qP = Math.round((Number(s.quick_count || 0) / sc) * 100);
+                  const sP = Math.round((Number(s.standard_count || 0) / sc) * 100);
+                  const mP = Math.max(0, 100 - qP - sP);
+                  return `<tr>
+                    <td class="strong">${esc(s.program)}</td>
+                    <td class="num">${s.session_count}</td>
+                    <td class="num">${fmtMinutes(Number(s.avg_minutes || 0))}</td>
+                    <td class="num subtle">${fmtMinutes(Number(s.median_minutes || 0))}</td>
+                    <td class="num strong">${fmtMinutes(Number(s.max_minutes || 0))}</td>
+                    <td>
+                      <div class="session-mix" title="Quick &lt;20m: ${qP}% | Standard 20-60m: ${sP}% | Marathon &gt;1h: ${mP}%">
+                        <i class="quick" style="width:${qP}%"></i>
+                        <i class="std" style="width:${sP}%"></i>
+                        <i class="marathon" style="width:${mP}%"></i>
+                      </div>
+                    </td>
+                  </tr>`;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>
+          <div class="hint" style="margin-top:10px">
+            <span style="display:inline-flex;align-items:center;gap:4px;margin-right:12px"><i style="display:inline-block;width:8px;height:8px;border-radius:2px;background:var(--success)"></i> &lt;20 min quick</span>
+            <span style="display:inline-flex;align-items:center;gap:4px;margin-right:12px"><i style="display:inline-block;width:8px;height:8px;border-radius:2px;background:var(--accent)"></i> 20-60 min standard</span>
+            <span style="display:inline-flex;align-items:center;gap:4px"><i style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#8b5cf6"></i> &gt;1 hr marathon</span>
+          </div>
+        </div>
+      </div>`;
+  }
 
   root.innerHTML = `<div class="card stats" style="margin-top:0;margin-bottom:16px">
       ${stat('Most used', programs.length ? esc(programs[0].program) : '&mdash;', programs.length ? `${fmtMinutes(programs[0].minutes)} &middot; ${fmtPct(activeTotal ? programs[0].minutes / activeTotal : 0)} of active time` : 'No usage', 'gamepad-2')}
@@ -363,6 +695,7 @@ export async function renderPrograms(root, range) {
         </tbody></table></div>` : empty('No data.', 'monitor')}
       </div>
     </div>
+    ${sessionsHtml}
     <div class="card section">
       <div class="card-head"><h2>All programs</h2><span class="meta">${programs.length} total</span></div>
       ${programs.length ? `<div class="table-wrap"><table class="table">
@@ -594,22 +927,45 @@ export async function renderRevenue(root, range) {
       </tr>`).join('')}</tbody>
     </table></div>` : empty('No game or app usage recorded in this period.', 'app-window');
 
+  // Feature 3: Station Load Imbalance & Fleet Workload Parity
+  const expectedShare = perPc.length ? (1 / perPc.length) : 0;
+  const overworked = perPc.filter(p => expectedShare > 0 && (p.active / (activeTotal || 1)) / expectedShare > 1.35);
+  const neglected = perPc.filter(p => expectedShare > 0 && (p.active / (activeTotal || 1)) / expectedShare < 0.65);
+  const parityNotice = (perPc.length > 2 && (overworked.length || neglected.length)) ? `
+    <div class="alert info" style="margin:14px 18px 0">
+      ${icon('scale')}
+      <div><b>Fleet Workload Parity:</b> ${overworked.length ? `Station ${overworked.map(o => esc(o.pc)).join(', ')} carries heavy customer wear (>35% above average). ` : ''}${neglected.length ? `Station ${neglected.map(n => esc(n.pc)).join(', ')} has unusually low runtime (<65% of average); inspect screen angle, seat, and mouse/keyboard responsiveness.` : ''}</div>
+    </div>` : '';
+
   // PC Table HTML
   const pcTable = perPc.length ? `
     <div class="table-wrap"><table class="table">
-      <thead><tr><th>Computer / Shop</th><th class="num">Active</th><th class="num">On-time</th><th class="num">Utilisation</th><th>Share</th><th class="num">Estimate</th></tr></thead>
-      <tbody>${perPc.map((p, i) => `<tr>
-        <td class="${i === 0 ? 'strong' : ''}">
-          <div class="strong">${esc(p.pc)}</div>
-          ${p.shop ? `<div class="table-shop" title="Shop: ${esc(p.shop)}">${icon('store')}<span>${esc(p.shop)}</span></div>` : ''}
-        </td>
-        <td class="num">${fmtMinutes(p.active)}</td>
-        <td class="num subtle">${fmtMinutes(p.on)}</td>
-        <td class="num">${fmtPct(p.on ? p.active / p.on : 0)}</td>
-        <td style="width:20%"><div class="bar-track"><div class="bar-fill" style="width:${revenue ? (p.revenue / revenue) * 100 : 0}%;background:${seriesColor(pcs.indexOf(p.pc))}"></div></div></td>
-        <td class="num strong">${fmtMoney(p.revenue)}</td>
-      </tr>`).join('')}</tbody>
-    </table></div>` : empty('No computer data.', 'monitor');
+      <thead><tr><th>Computer / Shop</th><th class="num">Active</th><th class="num">On-time</th><th class="num">Utilisation</th><th>Workload</th><th>Share</th><th class="num">Estimate</th></tr></thead>
+      <tbody>${perPc.map((p, i) => {
+        const actualShare = activeTotal > 0 ? (p.active / activeTotal) : 0;
+        const parityRatio = expectedShare > 0 ? (actualShare / expectedShare) : 1;
+        let parityBadge = `<span class="badge balanced">Balanced</span>`;
+        if (activeTotal > 0 && perPc.length > 1) {
+          if (parityRatio > 1.35) {
+            parityBadge = `<span class="badge heavy" title="Workload is ${Math.round((parityRatio - 1) * 100)}% above fleet average">+${Math.round((parityRatio - 1) * 100)}% Heavy</span>`;
+          } else if (parityRatio < 0.65) {
+            parityBadge = `<span class="badge neglected" title="Workload is ${Math.round((1 - parityRatio) * 100)}% below fleet average">-${Math.round((1 - parityRatio) * 100)}% Low</span>`;
+          }
+        }
+        return `<tr>
+          <td class="${i === 0 ? 'strong' : ''}">
+            <div class="strong">${esc(p.pc)}</div>
+            ${p.shop ? `<div class="table-shop" title="Shop: ${esc(p.shop)}">${icon('store')}<span>${esc(p.shop)}</span></div>` : ''}
+          </td>
+          <td class="num">${fmtMinutes(p.active)}</td>
+          <td class="num subtle">${fmtMinutes(p.on)}</td>
+          <td class="num">${fmtPct(p.on ? p.active / p.on : 0)}</td>
+          <td>${parityBadge}</td>
+          <td style="width:16%"><div class="bar-track"><div class="bar-fill" style="width:${revenue ? (p.revenue / revenue) * 100 : 0}%;background:${seriesColor(pcs.indexOf(p.pc))}"></div></div></td>
+          <td class="num strong">${fmtMoney(p.revenue)}</td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table></div>${parityNotice}` : empty('No computer data.', 'monitor');
 
   root.innerHTML = `
     <div class="hero">${heroCardsHtml}</div>

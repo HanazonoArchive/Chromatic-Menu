@@ -394,6 +394,93 @@ as $$
     order by 1, 2
 $$;
 
+-- Contiguous play session statistics by program across a date range.
+-- Consecutive heartbeats with the same program on the same PC form a session.
+create or replace function public.get_session_stats(p_from date, p_to date)
+returns table (
+    program         text,
+    session_count   bigint,
+    total_minutes   numeric,
+    avg_minutes     numeric,
+    median_minutes  numeric,
+    max_minutes     numeric,
+    quick_count     bigint,
+    standard_count  bigint,
+    marathon_count  bigint
+)
+language sql
+stable
+security invoker
+set search_path = public
+as $$
+    with rows as (
+        select h.pc_name, h.ts, h.program, h.interval_seconds,
+               lag(h.ts)      over w as prev_ts,
+               lag(h.program) over w as prev_program
+        from public.heartbeats h
+        where h.ts >= (p_from::timestamp at time zone public.shop_tz())
+          and h.ts <  ((p_to + 1)::timestamp at time zone public.shop_tz())
+          and h.program not in ('Chromatic Menu', 'Unknown', 'Windows')
+        window w as (partition by h.pc_name order by h.ts)
+    ),
+    breaks as (
+        select r.*,
+               (r.prev_ts is null
+                or r.ts - r.prev_ts > make_interval(secs => r.interval_seconds * 2 + 30)
+                or r.program is distinct from r.prev_program) as is_break
+        from rows r
+    ),
+    sessions as (
+        select b.pc_name, b.program,
+               sum(case when b.is_break then 1 else 0 end) over (partition by b.pc_name order by b.ts) as session_id,
+               b.interval_seconds
+        from breaks b
+    ),
+    aggregated as (
+        select s.program, s.pc_name, s.session_id,
+               sum(s.interval_seconds) / 60.0 as session_mins
+        from sessions s
+        group by s.program, s.pc_name, s.session_id
+    )
+    select a.program,
+           count(*)::bigint as session_count,
+           round(sum(a.session_mins), 1) as total_minutes,
+           round(avg(a.session_mins), 1) as avg_minutes,
+           round(percentile_cont(0.5) within group (order by a.session_mins)::numeric, 1) as median_minutes,
+           round(max(a.session_mins), 1) as max_minutes,
+           count(*) filter (where a.session_mins < 20)::bigint as quick_count,
+           count(*) filter (where a.session_mins between 20 and 60)::bigint as standard_count,
+           count(*) filter (where a.session_mins > 60)::bigint as marathon_count
+    from aggregated a
+    group by a.program
+    order by total_minutes desc;
+$$;
+
+-- Detects network latency/outages where heartbeats buffered in client memory
+-- were flushed in a delayed batch (received_at - ts > interval_seconds * 2 + 30).
+create or replace function public.get_network_incidents(p_day date)
+returns table (
+    pc_name        text,
+    incident_time  timestamptz,
+    delay_seconds  int,
+    program        text
+)
+language sql
+stable
+security invoker
+set search_path = public
+as $$
+    select h.pc_name,
+           h.ts as incident_time,
+           round(extract(epoch from (h.received_at - h.ts)))::int as delay_seconds,
+           h.program
+    from public.heartbeats h
+    where h.ts >= (p_day::timestamp at time zone public.shop_tz())
+      and h.ts <  ((p_day + 1)::timestamp at time zone public.shop_tz())
+      and extract(epoch from (h.received_at - h.ts)) > (h.interval_seconds * 2 + 30)
+    order by h.ts desc;
+$$;
+
 -- Supabase grants EXECUTE on new functions to anon by default; only signed-in
 -- dashboard users may call the read functions, and nobody may call the
 -- maintenance functions through the API.
@@ -405,6 +492,8 @@ revoke execute on function public.get_day_timeline(date)            from public,
 revoke execute on function public.get_usage(date, date)             from public, anon;
 revoke execute on function public.get_daily(date, date)             from public, anon;
 revoke execute on function public.get_hourly_heatmap(date, date)    from public, anon;
+revoke execute on function public.get_session_stats(date, date)     from public, anon;
+revoke execute on function public.get_network_incidents(date)       from public, anon;
 revoke execute on function public.game_requests_before_insert()     from public, anon, authenticated;
 
 grant execute on function public.summarize_range(date, date)    to authenticated;
@@ -413,6 +502,8 @@ grant execute on function public.get_day_timeline(date)         to authenticated
 grant execute on function public.get_usage(date, date)          to authenticated;
 grant execute on function public.get_daily(date, date)          to authenticated;
 grant execute on function public.get_hourly_heatmap(date, date) to authenticated;
+grant execute on function public.get_session_stats(date, date)  to authenticated;
+grant execute on function public.get_network_incidents(date)    to authenticated;
 
 -- ---------------------------------------------------------------------
 -- Scheduled jobs (pg_cron runs in UTC; 19:00 UTC = 03:00 Manila)
