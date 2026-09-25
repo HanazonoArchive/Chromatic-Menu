@@ -353,21 +353,23 @@ export async function renderTimeline(root, day) {
 
     const shop = statusByPc.get(pc)?.menu_name || getShopForPc(pc) || '';
     const crashBadge = pcUnplanned > 0
-      ? `<span class="badge crash" title="Heartbeat ceased mid-game without exiting to menu">${icon('alert-triangle')}${pcUnplanned} mid-game stop${pcUnplanned > 1 ? 's' : ''}</span>`
+      ? `<span class="badge crash" title="Heartbeat ceased mid-game without exiting to menu (${pcUnplanned} mid-game interrupt${pcUnplanned > 1 ? 's' : ''})">${icon('alert-triangle')}${pcUnplanned} stop${pcUnplanned > 1 ? 's' : ''}</span>`
       : '';
     const bootBadge = boots.size >= 4
-      ? `<span class="badge warn" title="High reboot frequency today">${boots.size} boots</span>`
+      ? `<span class="badge warn sm" title="High reboot frequency today (${boots.size} power cycles)">${boots.size} boots</span>`
       : '';
 
     return `<div class="tl-row">
       <div class="tl-name">
-        <div class="n">
-          ${esc(pc)}
-          ${online ? '<span class="badge online"><span class="dot"></span>Online</span>' : ''}
+        <div class="tl-pc-line">
+          <span class="pc-name" title="${esc(pc)}">${esc(pc)}</span>
+          ${online ? '<span class="badge online sm"><span class="dot"></span>Online</span>' : ''}
+        </div>
+        <div class="tl-tags">
+          ${shop ? `<span class="tl-shop" title="Shop: ${esc(shop)}">${icon('store')}<span>${esc(shop)}</span></span>` : ''}
           ${crashBadge}
           ${bootBadge}
         </div>
-        ${shop ? `<div class="tl-shop" title="Shop: ${esc(shop)}">${icon('store')}<span>${esc(shop)}</span></div>` : ''}
       </div>
       <div class="tl-bar">${gridLines}${bars}${nowMarker}</div>
       ${stats}
