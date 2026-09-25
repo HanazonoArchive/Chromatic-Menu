@@ -170,7 +170,8 @@ export async function renderOverview(root) {
     : `<div class="grid pcs">${status.map(s => {
         const d = byPc.get(s.pc_name) || { minutes_on: 0, minutes_active: 0 };
         const idle = IDLE_PROGRAMS.has(s.last_program);
-        const shop = s.menu_name || getShopForPc(s.pc_name) || 'PisoNet';
+        const hasMultiShops = getAllShops().length > 1;
+        const shop = s.menu_name || getShopForPc(s.pc_name) || '';
         const expShare = status.length ? (1 / status.length) : 0;
         const actShare = activeTotal > 0 ? (d.minutes_active / activeTotal) : 0;
         const parityRatio = expShare > 0 ? (actShare / expShare) : 1;
@@ -186,7 +187,7 @@ export async function renderOverview(root) {
           <div class="pc-top">
             <div class="pc-identity">
               <span class="name" title="${esc(s.pc_name)}">${esc(s.pc_name)}</span>
-              <span class="pc-shop" title="Shop: ${esc(shop)}">${icon('store')}<span>${esc(shop)}</span></span>
+              ${hasMultiShops && shop ? `<span class="pc-shop" title="Shop: ${esc(shop)}">${icon('store')}<span>${esc(shop)}</span></span>` : ''}
             </div>
             <div style="display:flex;align-items:center;gap:4px">
               ${parityBadge}
@@ -347,29 +348,38 @@ export async function renderTimeline(root, day) {
         <span>On<b>${fmtMinutes(onMin)}</b></span>
         <span>First on<b>${fmtTime(first)}</b></span>
         <span>${online ? 'Still on' : `Last off<b>${fmtTime(last)}</b>`}</span>
-        <span>Power-ons<b>${boots.size}</b></span>
+        <span>Power-ons<b${boots.size >= 5 ? ' class="warn-val"' : ''}>${boots.size}</b></span>
+        ${pcUnplanned > 0 ? `<span class="stat-warn" title="${pcUnplanned} mid-game interrupt${pcUnplanned > 1 ? 's' : ''}">${icon('alert-triangle')}<b>${pcUnplanned} interrupt${pcUnplanned > 1 ? 's' : ''}</b></span>` : ''}
         <span>Longest sitting<b>${fmtMinutes(longest)}</b></span>
       </div>` : `<div class="tl-stats"><span>Off all day</span></div>`;
 
+    const hasMultiShops = getAllShops().length > 1;
     const shop = statusByPc.get(pc)?.menu_name || getShopForPc(pc) || '';
-    const crashBadge = pcUnplanned > 0
-      ? `<span class="badge crash" title="Heartbeat ceased mid-game without exiting to menu (${pcUnplanned} mid-game interrupt${pcUnplanned > 1 ? 's' : ''})">${icon('alert-triangle')}${pcUnplanned} stop${pcUnplanned > 1 ? 's' : ''}</span>`
-      : '';
-    const bootBadge = boots.size >= 4
-      ? `<span class="badge warn sm" title="High reboot frequency today (${boots.size} power cycles)">${boots.size} boots</span>`
-      : '';
+
+    let subContent = '';
+    if (pcUnplanned > 0) {
+      subContent = `<span class="tl-issue-tag" title="Heartbeat ceased mid-game without exiting to menu (${pcUnplanned} mid-game interrupt${pcUnplanned > 1 ? 's' : ''})">${icon('alert-triangle')}<span>${pcUnplanned} mid-game stop${pcUnplanned > 1 ? 's' : ''}</span></span>`;
+      if (hasMultiShops && shop) {
+        subContent = `<span class="tl-shop-tag" title="Shop: ${esc(shop)}">${icon('store')}<span>${esc(shop)}</span></span>` + subContent;
+      }
+    } else if (hasMultiShops && shop) {
+      subContent = `<span class="tl-shop-tag" title="Shop: ${esc(shop)}">${icon('store')}<span>${esc(shop)}</span></span>`;
+    } else {
+      subContent = `<span class="tl-station-status">Normal</span>`;
+    }
+
+    const statusPill = isToday ? `
+      <span class="status-pill ${online ? 'online' : 'offline'}">
+        <span class="dot"></span>${online ? 'Online' : 'Offline'}
+      </span>` : '';
 
     return `<div class="tl-row">
-      <div class="tl-name">
-        <div class="tl-pc-line">
-          <span class="pc-name" title="${esc(pc)}">${esc(pc)}</span>
-          ${online ? '<span class="badge online sm"><span class="dot"></span>Online</span>' : ''}
+      <div class="tl-station">
+        <div class="tl-station-top">
+          <span class="tl-station-name" title="${esc(pc)}">${esc(pc)}</span>
+          ${statusPill}
         </div>
-        <div class="tl-tags">
-          ${shop ? `<span class="tl-shop" title="Shop: ${esc(shop)}">${icon('store')}<span>${esc(shop)}</span></span>` : ''}
-          ${crashBadge}
-          ${bootBadge}
-        </div>
+        <div class="tl-station-sub">${subContent}</div>
       </div>
       <div class="tl-bar">${gridLines}${bars}${nowMarker}</div>
       ${stats}
@@ -940,9 +950,10 @@ export async function renderRevenue(root, range) {
     </div>` : '';
 
   // PC Table HTML
+  const hasMultiShops = getAllShops().length > 1;
   const pcTable = perPc.length ? `
     <div class="table-wrap"><table class="table">
-      <thead><tr><th>Computer / Shop</th><th class="num">Active</th><th class="num">On-time</th><th class="num">Utilisation</th><th>Workload</th><th>Share</th><th class="num">Estimate</th></tr></thead>
+      <thead><tr><th>${hasMultiShops ? 'Computer / Shop' : 'Computer'}</th><th class="num">Active</th><th class="num">On-time</th><th class="num">Utilisation</th><th>Workload</th><th>Share</th><th class="num">Estimate</th></tr></thead>
       <tbody>${perPc.map((p, i) => {
         const actualShare = activeTotal > 0 ? (p.active / activeTotal) : 0;
         const parityRatio = expectedShare > 0 ? (actualShare / expectedShare) : 1;
@@ -957,7 +968,7 @@ export async function renderRevenue(root, range) {
         return `<tr>
           <td class="${i === 0 ? 'strong' : ''}">
             <div class="strong">${esc(p.pc)}</div>
-            ${p.shop ? `<div class="table-shop" title="Shop: ${esc(p.shop)}">${icon('store')}<span>${esc(p.shop)}</span></div>` : ''}
+            ${(hasMultiShops && p.shop) ? `<div class="table-shop" title="Shop: ${esc(p.shop)}">${icon('store')}<span>${esc(p.shop)}</span></div>` : ''}
           </td>
           <td class="num">${fmtMinutes(p.active)}</td>
           <td class="num subtle">${fmtMinutes(p.on)}</td>
