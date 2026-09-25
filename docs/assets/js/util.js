@@ -152,23 +152,13 @@ export function currencySymbol(code = currency()) {
 
 export function fmtMoney(value, opts = {}) {
   const n = Math.max(0, Number(value) || 0);
-  const defaultFrac = Number.isInteger(n) ? 0 : 2;
-  const minFrac = opts.minimumFractionDigits ?? defaultFrac;
-  const maxFrac = opts.maximumFractionDigits ?? defaultFrac;
+  const minFrac = opts.minimumFractionDigits ?? 2;
+  const maxFrac = opts.maximumFractionDigits ?? 2;
+  const sym = currencySymbol();
   try {
-    const formatted = new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: currency(),
-      currencyDisplay: 'narrowSymbol',
-      minimumFractionDigits: minFrac,
-      maximumFractionDigits: maxFrac,
-      ...opts
-    }).format(n);
-    return formatted
-      .replace(/^([^\d\s\-+]+)(\d)/, '$1\u00A0$2')
-      .replace(/(\d)([^\d\s\-+]+)$/, '$1\u00A0$2');
+    const num = n.toLocaleString('en-US', { minimumFractionDigits: minFrac, maximumFractionDigits: maxFrac, ...opts });
+    return `${sym}\u00A0${num}`;
   } catch {
-    const sym = currencySymbol();
     const num = (maxFrac > 0 ? n.toFixed(maxFrac) : Math.round(n)).toLocaleString('en-US');
     return `${sym}\u00A0${num}`;
   }
@@ -189,7 +179,7 @@ export function moneyFromMinutes(minutes) {
 }
 
 export function rateText() {
-  return `${fmtMoney(1)} per ${minutesPerUnit()} active min`;
+  return `${fmtMoney(1, { minimumFractionDigits: 0, maximumFractionDigits: 0 })} per ${minutesPerUnit()} active min`;
 }
 
 export function cssVar(name) {
