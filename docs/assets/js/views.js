@@ -5,7 +5,8 @@ import {
   esc, todayStr, addDays, daysInclusive, dayStartMs, fmtDay, fmtTime, fmtDateTime, fmtMinutes,
   fmtAgo, fmtMoney, fmtPct, minutesPerUnit, moneyFromMinutes, rateText, currency, currencySymbol, CURRENCIES, cssVar, seriesColor, groupBy, sum,
   IDLE_PROGRAMS, NON_PROGRAMS, formatProgramName, store, TZ,
-  recordPcShops, getShopForPc, getAllShops
+  recordPcShops, getShopForPc, getAllShops,
+  startOfWeek, endOfWeek, startOfMonth, endOfMonth, fmtWeekRange, fmtMonth
 } from './util.js';
 
 Chart.register(...registerables);
@@ -28,7 +29,9 @@ function makeChart(canvas, config) {
     axis.border = { display: false };
     axis.ticks = { padding: 10, ...(axis.ticks || {}) };
   }
-  charts.push(new Chart(canvas, config));
+  const chart = new Chart(canvas, config);
+  charts.push(chart);
+  return chart;
 }
 
 function errorBox(error) {
@@ -696,10 +699,11 @@ export async function renderPrograms(root, range) {
         <div class="card-head"><h2>By computer</h2><span class="meta">Top 3 each</span></div>
         ${perPc.length ? `<div class="table-wrap"><table class="table"><tbody>
           ${perPc.map(p => {
+            const hasMultiShops = getAllShops().length > 1;
             const shop = getShopForPc(p.pc);
             return `<tr><td style="width:36%">
               <div class="strong">${esc(p.pc)}</div>
-              ${shop ? `<div class="table-shop" title="Shop: ${esc(shop)}">${icon('store')}<span>${esc(shop)}</span></div>` : ''}
+              ${(hasMultiShops && shop) ? `<div class="table-shop" title="Shop: ${esc(shop)}">${icon('store')}<span>${esc(shop)}</span></div>` : ''}
               <div class="meta" style="margin-top:2px">${fmtMinutes(p.total)} active</div>
             </td>
             <td>${p.top.map((t, i) => `<div style="display:flex;justify-content:space-between;gap:10px;${i ? 'margin-top:4px' : ''}"><span class="${i === 0 ? 'strong' : 'muted'}">${esc(t.program)}</span><span class="subtle tabular">${fmtMinutes(t.minutes)}</span></div>`).join('')}</td></tr>`;
@@ -812,6 +816,98 @@ export async function renderRevenue(root, range) {
   </div></div>
   <div class="hm-scale">Less ${[0.15, 0.4, 0.7, 1].map(f => `<i style="${shade(f * maxHeat)}"></i>`).join('')} More</div>`;
 
+  // Multi-period rollups: Weekly and Monthly aggregations
+  const weeksCount = days / 7;
+  const monthsCount = days / 30.4375;
+  const weeklyAvgRevenue = revenue / Math.max(1, weeksCount);
+  const monthlyAvgRevenue = revenue / Math.max(1, monthsCount);
+  const weeklyAvgActive = activeTotal / Math.max(1, weeksCount);
+  const monthlyAvgActive = activeTotal / Math.max(1, monthsCount);
+
+  // Group daily rows by calendar week (Monday to Sunday)
+  const weeksMap = new Map();
+  for (const row of daily) {
+    const wStart = startOfWeek(row.day);
+    if (!weeksMap.has(wStart)) {
+      weeksMap.set(wStart, {
+        start: wStart,
+        end: endOfWeek(row.day),
+        days: new Set(),
+        minutes_active: 0,
+        minutes_on: 0
+      });
+    }
+    const w = weeksMap.get(wStart);
+    w.days.add(row.day);
+    w.minutes_active += Number(row.minutes_active || 0);
+    w.minutes_on += Number(row.minutes_on || 0);
+  }
+
+  const weeklyRollup = [...weeksMap.values()]
+    .sort((a, b) => a.start.localeCompare(b.start))
+    .map(w => {
+      const rev = moneyFromMinutes(w.minutes_active);
+      const daysCount = w.days.size;
+      return {
+        start: w.start,
+        end: w.end,
+        label: fmtWeekRange(w.start, w.end),
+        daysCount,
+        minutes_active: w.minutes_active,
+        minutes_on: w.minutes_on,
+        utilisation: w.minutes_on > 0 ? w.minutes_active / w.minutes_on : 0,
+        revenue: rev,
+        dailyAvg: daysCount > 0 ? rev / daysCount : 0
+      };
+    });
+
+  for (let i = 0; i < weeklyRollup.length; i++) {
+    const prev = i > 0 ? weeklyRollup[i - 1].revenue : 0;
+    weeklyRollup[i].growth = prev > 0 ? (weeklyRollup[i].revenue - prev) / prev : null;
+  }
+  const bestWeek = weeklyRollup.reduce((a, b) => (b.revenue > (a?.revenue ?? -1) ? b : a), null);
+
+  // Group daily rows by calendar month (YYYY-MM)
+  const monthsMap = new Map();
+  for (const row of daily) {
+    const mKey = row.day.slice(0, 7);
+    if (!monthsMap.has(mKey)) {
+      monthsMap.set(mKey, {
+        monthKey: mKey,
+        days: new Set(),
+        minutes_active: 0,
+        minutes_on: 0
+      });
+    }
+    const m = monthsMap.get(mKey);
+    m.days.add(row.day);
+    m.minutes_active += Number(row.minutes_active || 0);
+    m.minutes_on += Number(row.minutes_on || 0);
+  }
+
+  const monthlyRollup = [...monthsMap.values()]
+    .sort((a, b) => a.monthKey.localeCompare(b.monthKey))
+    .map(m => {
+      const rev = moneyFromMinutes(m.minutes_active);
+      const daysCount = m.days.size;
+      return {
+        monthKey: m.monthKey,
+        label: fmtMonth(m.monthKey),
+        daysCount,
+        minutes_active: m.minutes_active,
+        minutes_on: m.minutes_on,
+        utilisation: m.minutes_on > 0 ? m.minutes_active / m.minutes_on : 0,
+        revenue: rev,
+        dailyAvg: daysCount > 0 ? rev / daysCount : 0
+      };
+    });
+
+  for (let i = 0; i < monthlyRollup.length; i++) {
+    const prev = i > 0 ? monthlyRollup[i - 1].revenue : 0;
+    monthlyRollup[i].growth = prev > 0 ? (monthlyRollup[i].revenue - prev) / prev : null;
+  }
+  const bestMonth = monthlyRollup.reduce((a, b) => (b.revenue > (a?.revenue ?? -1) ? b : a), null);
+
   // Hero cards depending on range (Single Day vs Multi-Day)
   let heroCardsHtml = '';
   if (isSingleDay) {
@@ -833,6 +929,23 @@ export async function renderRevenue(root, range) {
         <div class="hero-value">${fmtPct(onTotal ? activeTotal / onTotal : 0)}</div>
         <div class="hero-foot"><span class="subtle">${rateText()}</span></div>
       </div>`;
+  } else if (days >= 14) {
+    heroCardsHtml = `
+      <div class="card hero-card primary">
+        <div class="top">${icon('wallet')}<span class="eyebrow">Total estimated revenue</span></div>
+        <div class="hero-value">${fmtMoney(revenue)}</div>
+        <div class="hero-foot">${delta(change, `vs previous ${days} days (${fmtMoney(prevRevenue)})`) || `<span class="subtle">Previous ${days} days: ${fmtMoney(prevRevenue)}</span>`}</div>
+      </div>
+      <div class="card hero-card">
+        <div class="top">${icon('calendar')}<span class="eyebrow">Weekly pace (7 days)</span></div>
+        <div class="hero-value">${fmtMoney(weeklyAvgRevenue)}</div>
+        <div class="hero-foot">${fmtMinutes(weeklyAvgActive)} active gameplay &middot; ${Math.round(weeksCount * 10) / 10} wks in range</div>
+      </div>
+      <div class="card hero-card">
+        <div class="top">${icon('trending-up')}<span class="eyebrow">Monthly run rate (30 days)</span></div>
+        <div class="hero-value">${fmtMoney(monthlyAvgRevenue)}</div>
+        <div class="hero-foot">${fmtMinutes(monthlyAvgActive)} active gameplay &middot; prorated 30-day projection</div>
+      </div>`;
   } else {
     heroCardsHtml = `
       <div class="card hero-card primary">
@@ -852,11 +965,18 @@ export async function renderRevenue(root, range) {
       </div>`;
   }
 
-  // Chart configuration: Hourly breakdown for single day, daily breakdown for multi-day
+  // Chart configuration: Hourly breakdown for single day, daily/weekly/monthly for multi-day
   let chartTitle = 'Revenue per day';
   let chartMeta = 'Stacked by computer';
   let chartLabels = [];
   let chartDatasets = [];
+
+  let dailyLabels = [];
+  let dailyDatasets = [];
+  let weeklyLabels = [];
+  let weeklyDatasets = [];
+  let monthlyLabels = [];
+  let monthlyDatasets = [];
 
   if (isSingleDay) {
     const isToday = range.from === todayStr();
@@ -909,8 +1029,8 @@ export async function renderRevenue(root, range) {
   } else {
     chartTitle = 'Revenue per day';
     chartMeta = 'Stacked by computer';
-    chartLabels = dayList.map(d => fmtDay(d));
-    chartDatasets = pcs.map((pc, i) => ({
+    dailyLabels = dayList.map(d => fmtDay(d));
+    dailyDatasets = pcs.map((pc, i) => ({
       label: pc,
       data: dayList.map(d => {
         const mins = byDayPc.get(`${d}|${pc}`)?.minutes_active || 0;
@@ -920,6 +1040,33 @@ export async function renderRevenue(root, range) {
       borderRadius: 3,
       maxBarThickness: 34
     }));
+
+    weeklyLabels = weeklyRollup.map(w => w.label);
+    weeklyDatasets = pcs.map((pc, i) => ({
+      label: pc,
+      data: weeklyRollup.map(w => {
+        const mins = sum(daily.filter(r => r.pc_name === pc && r.day >= w.start && r.day <= w.end), 'minutes_active');
+        return Math.round(moneyFromMinutes(mins) * 100) / 100;
+      }),
+      backgroundColor: seriesColor(i),
+      borderRadius: 3,
+      maxBarThickness: 40
+    }));
+
+    monthlyLabels = monthlyRollup.map(m => m.label);
+    monthlyDatasets = pcs.map((pc, i) => ({
+      label: pc,
+      data: monthlyRollup.map(m => {
+        const mins = sum(daily.filter(r => r.pc_name === pc && r.day.startsWith(m.monthKey)), 'minutes_active');
+        return Math.round(moneyFromMinutes(mins) * 100) / 100;
+      }),
+      backgroundColor: seriesColor(i),
+      borderRadius: 3,
+      maxBarThickness: 48
+    }));
+
+    chartLabels = dailyLabels;
+    chartDatasets = dailyDatasets;
   }
 
   // Games table HTML
@@ -980,23 +1127,105 @@ export async function renderRevenue(root, range) {
       }).join('')}</tbody>
     </table></div>${parityNotice}` : empty('No computer data.', 'monitor');
 
-  root.innerHTML = `
-    <div class="hero">${heroCardsHtml}</div>
+  function buildRollupTable(mode = 'weekly') {
+    const isWeek = mode === 'weekly';
+    const list = isWeek ? weeklyRollup : monthlyRollup;
+    if (!list.length) return `<div style="padding:20px">${empty('No periodic data recorded.', 'calendar')}</div>`;
+    return `
+      <div class="table-wrap"><table class="table">
+        <thead>
+          <tr>
+            <th>${isWeek ? 'Week (Mon &ndash; Sun)' : 'Month'}</th>
+            <th class="num">Active Time</th>
+            <th class="num">Power-On</th>
+            <th class="num">Utilisation</th>
+            <th class="num">Daily Pace</th>
+            <th style="width:20%">Share</th>
+            <th class="num">Revenue</th>
+            <th>Growth</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${list.map(r => `<tr>
+            <td class="strong">
+              <div>${esc(r.label)}</div>
+              <div class="subtle" style="font-size:11px;margin-top:2px">${r.daysCount} active day${r.daysCount > 1 ? 's' : ''}</div>
+            </td>
+            <td class="num">${fmtMinutes(r.minutes_active)}</td>
+            <td class="num subtle">${fmtMinutes(r.minutes_on)}</td>
+            <td class="num">${fmtPct(r.utilisation)}</td>
+            <td class="num">${fmtMoney(r.dailyAvg)} <span class="subtle" style="font-size:11px">/ day</span></td>
+            <td>
+              <div style="display:flex;align-items:center;gap:6px">
+                <div class="bar-track" style="flex:1"><div class="bar-fill" style="width:${revenue ? (r.revenue / revenue) * 100 : 0}%"></div></div>
+                <span class="subtle tabular" style="width:34px;text-align:right">${fmtPct(revenue ? r.revenue / revenue : 0)}</span>
+              </div>
+            </td>
+            <td class="num strong">${fmtMoney(r.revenue)}</td>
+            <td>${delta(r.growth, 'vs prior') || '<span class="subtle">&mdash;</span>'}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table></div>
+      <div class="rollup-summary">
+        <span>Weekly pace: <b>${fmtMoney(weeklyAvgRevenue)} / wk</b></span>
+        <span>Monthly run-rate: <b>${fmtMoney(monthlyAvgRevenue)} / mo</b></span>
+        ${(isWeek && bestWeek) ? `<span>Best week: <b>${fmtMoney(bestWeek.revenue)}</b> (${esc(bestWeek.label)})</span>` : ''}
+        ${(!isWeek && bestMonth) ? `<span>Best month: <b>${fmtMoney(bestMonth.revenue)}</b> (${esc(bestMonth.label)})</span>` : ''}
+      </div>`;
+  }
+
+  const periodicRollupSection = (!isSingleDay && (weeklyRollup.length > 1 || monthlyRollup.length > 1)) ? `
+    <div class="card section" id="rollupCard">
+      <div class="card-head">
+        <div>
+          <h2>Periodic performance rollup</h2>
+          <span class="meta">Weekly and monthly aggregated earnings, play hours, and trend</span>
+        </div>
+        <div class="seg rollup-seg" id="rollupTabSeg">
+          <button class="active" data-tab="weekly">Weekly breakdown</button>
+          <button data-tab="monthly">Monthly breakdown</button>
+        </div>
+      </div>
+      <div class="card-body" id="rollupContainer" style="padding:0">
+        ${buildRollupTable('weekly')}
+      </div>
+    </div>` : '';
+
+  const statsBarHtml = (!isSingleDay && days >= 14) ? `
+    <div class="card stats">
+      ${stat('Daily average', fmtMoney(revenue / days), `${days} recorded days in period`, 'calendar')}
+      ${stat('Best day', best && best.revenue > 0 ? fmtMoney(best.revenue) : '&mdash;', best && best.revenue > 0 ? esc(fmtDay(best.day, { weekday: 'long', month: 'short', day: 'numeric' })) : 'No revenue', 'trending-up')}
+      ${stat('Active paid time', fmtMinutes(activeTotal), 'Customer gameplay & app time', 'zap')}
+      ${stat('Shop utilisation', fmtPct(onTotal ? activeTotal / onTotal : 0), `${fmtMinutes(onTotal)} total power-on`, 'activity')}
+    </div>` : `
     <div class="card stats">
       ${stat('Active paid time', fmtMinutes(activeTotal), 'Customer gameplay & app time', 'zap')}
       ${stat('Idle in menu', fmtMinutes(Math.max(0, onTotal - activeTotal)), 'PC on, but no customer playing', 'layout-grid')}
       ${stat('Shop utilisation', fmtPct(onTotal ? activeTotal / onTotal : 0), `${fmtMinutes(onTotal)} total power-on`, 'activity')}
       ${stat('Top earner', perPc.length ? esc(perPc[0].pc) : '&mdash;', perPc.length ? `${fmtMoney(perPc[0].revenue)} &middot; ${fmtPct(revenue ? perPc[0].revenue / revenue : 0)}` : '', 'monitor')}
-    </div>
+    </div>`;
+
+  root.innerHTML = `
+    <div class="hero">${heroCardsHtml}</div>
+    ${statsBarHtml}
     <div class="card section">
       <div class="card-head">
-        <h2>${esc(chartTitle)}</h2>
-        <span class="meta">${esc(chartMeta)}</span>
+        <div>
+          <h2 id="chartTitle">${esc(chartTitle)}</h2>
+          <span class="meta" id="chartMeta">${esc(chartMeta)}</span>
+        </div>
+        ${(!isSingleDay && days >= 14) ? `
+          <div class="seg chart-seg" id="chartGroupingSeg">
+            <button class="active" data-group="day">Daily</button>
+            <button data-group="week">Weekly</button>
+            ${monthlyRollup.length > 1 ? '<button data-group="month">Monthly</button>' : ''}
+          </div>` : ''}
       </div>
       <div class="card-body">
         ${daily.length ? '<div class="chart-box"><canvas id="revenueChart"></canvas></div>' : empty('No revenue data in this range.', 'wallet')}
       </div>
     </div>
+    ${periodicRollupSection}
     <div class="grid cols-even section">
       <div class="card">
         <div class="card-head">
@@ -1029,8 +1258,9 @@ export async function renderRevenue(root, range) {
       </div>
     </div>`;
 
+  let revChart = null;
   if (daily.length && chartDatasets.length) {
-    makeChart(root.querySelector('#revenueChart'), {
+    revChart = makeChart(root.querySelector('#revenueChart'), {
       type: 'bar',
       data: {
         labels: chartLabels,
@@ -1059,6 +1289,48 @@ export async function renderRevenue(root, range) {
         }
       }
     });
+  }
+
+  const chartSeg = root.querySelector('#chartGroupingSeg');
+  if (chartSeg && revChart) {
+    chartSeg.onclick = (e) => {
+      const btn = e.target.closest('button[data-group]');
+      if (!btn || btn.classList.contains('active')) return;
+      chartSeg.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const g = btn.dataset.group;
+      const titleEl = root.querySelector('#chartTitle');
+      const metaEl = root.querySelector('#chartMeta');
+      if (g === 'week') {
+        revChart.data.labels = weeklyLabels;
+        revChart.data.datasets = weeklyDatasets;
+        if (titleEl) titleEl.textContent = 'Revenue per week';
+        if (metaEl) metaEl.textContent = 'Weekly total stacked by computer';
+      } else if (g === 'month') {
+        revChart.data.labels = monthlyLabels;
+        revChart.data.datasets = monthlyDatasets;
+        if (titleEl) titleEl.textContent = 'Revenue per month';
+        if (metaEl) metaEl.textContent = 'Monthly total stacked by computer';
+      } else {
+        revChart.data.labels = dailyLabels;
+        revChart.data.datasets = dailyDatasets;
+        if (titleEl) titleEl.textContent = 'Revenue per day';
+        if (metaEl) metaEl.textContent = 'Stacked by computer';
+      }
+      revChart.update();
+    };
+  }
+
+  const rollupSeg = root.querySelector('#rollupTabSeg');
+  if (rollupSeg) {
+    rollupSeg.onclick = (e) => {
+      const btn = e.target.closest('button[data-tab]');
+      if (!btn || btn.classList.contains('active')) return;
+      rollupSeg.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const container = root.querySelector('#rollupContainer');
+      if (container) container.innerHTML = buildRollupTable(btn.dataset.tab);
+    };
   }
 }
 

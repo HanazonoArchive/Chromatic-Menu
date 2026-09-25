@@ -335,8 +335,11 @@ label.field > span { display: block; font-size: 12.5px; font-weight: 500; color:
   background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
   box-shadow: var(--shadow-1); min-width: 0;
 }
-.card-head { display: flex; align-items: center; gap: 12px; padding: 14px 18px; border-bottom: 1px solid var(--border); }
+.card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 18px; border-bottom: 1px solid var(--border); }
 .card-head h2 { flex: 1; font-size: 14px; }
+.card-head > div:first-child { flex: 1; min-width: 0; }
+.card-head > div:first-child h2 { margin-bottom: 2px; }
+.card-head > div:first-child .meta { display: block; }
 .card-body { padding: 18px; }
 .card-body.flush { padding: 0; }
 
@@ -552,6 +555,17 @@ table.table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .chart-box { position: relative; height: 300px; }
 .chart-box.sm { height: 180px; }
 
+.chart-seg, .rollup-seg { flex-shrink: 0; }
+.chart-seg button, .rollup-seg button { height: 26px; padding: 0 10px; font-size: 12px; }
+
+.rollup-summary {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 12px 20px;
+  padding: 12px 18px; background: var(--surface-2); border-top: 1px solid var(--border);
+  font-size: 12px; color: var(--text-2);
+}
+.rollup-summary span { display: inline-flex; align-items: baseline; gap: 4px; }
+.rollup-summary b { color: var(--text); font-family: var(--font-money); font-variant-numeric: tabular-nums; font-weight: 600; }
+
 /* ---------- Operational Intelligence Primitives ---------- */
 
 .envelope-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
@@ -758,7 +772,10 @@ table.table { width: 100%; border-collapse: collapse; font-size: 13px; }
 
   .content { padding: 12px 12px 36px; }
   .card { border-radius: var(--radius-sm); }
-  .card-head { padding: 12px 14px; }
+  .card-head { padding: 12px 14px; flex-wrap: wrap; gap: 10px; }
+  .chart-seg, .rollup-seg { width: 100%; display: flex; }
+  .chart-seg button, .rollup-seg button { flex: 1; justify-content: center; padding: 0 6px; }
+  .rollup-summary { flex-direction: column; align-items: flex-start; gap: 6px; padding: 10px 14px; }
   .card-body { padding: 14px 12px; }
   .section-head { margin: 20px 0 10px; }
   .section-head h2 { font-size: 14px; }

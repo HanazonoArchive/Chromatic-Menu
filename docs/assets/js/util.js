@@ -61,6 +61,51 @@ export function fmtDay(day, opts = { month: 'short', day: 'numeric' }) {
   return new Intl.DateTimeFormat('en-US', { ...opts, timeZone: 'UTC' }).format(new Date(day + 'T00:00:00Z'));
 }
 
+export function startOfWeek(dayStr) {
+  const d = new Date(dayStr + 'T00:00:00Z');
+  const day = d.getUTCDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  d.setUTCDate(d.getUTCDate() + diff);
+  return d.toISOString().slice(0, 10);
+}
+
+export function endOfWeek(dayStr) {
+  const d = new Date(dayStr + 'T00:00:00Z');
+  const day = d.getUTCDay();
+  const diff = day === 0 ? 0 : 7 - day;
+  d.setUTCDate(d.getUTCDate() + diff);
+  return d.toISOString().slice(0, 10);
+}
+
+export function startOfMonth(dayStr) {
+  return dayStr.slice(0, 7) + '-01';
+}
+
+export function endOfMonth(dayStr) {
+  const parts = dayStr.split('-').map(Number);
+  const d = new Date(Date.UTC(parts[0], parts[1], 0));
+  return d.toISOString().slice(0, 10);
+}
+
+export function fmtWeekRange(fromStr, toStr) {
+  const f = new Date(fromStr + 'T00:00:00Z');
+  const t = new Date(toStr + 'T00:00:00Z');
+  const sameYear = f.getUTCFullYear() === t.getUTCFullYear();
+  const sameMonth = f.getUTCMonth() === t.getUTCMonth() && sameYear;
+  if (sameMonth) {
+    const m = new Intl.DateTimeFormat('en-US', { month: 'short', timeZone: 'UTC' }).format(f);
+    return `${m} ${f.getUTCDate()} – ${t.getUTCDate()}`;
+  }
+  const m1 = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' }).format(f);
+  const m2 = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' }).format(t);
+  return `${m1} – ${m2}`;
+}
+
+export function fmtMonth(dayOrMonthKey) {
+  const d = new Date((dayOrMonthKey.length === 7 ? dayOrMonthKey + '-01' : dayOrMonthKey) + 'T00:00:00Z');
+  return new Intl.DateTimeFormat('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' }).format(d);
+}
+
 export function fmtTime(iso) {
   return new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: TZ }).format(new Date(iso));
 }

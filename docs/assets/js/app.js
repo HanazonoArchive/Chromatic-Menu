@@ -1,6 +1,6 @@
 import { savedProject, normalizeUrl, verifyProject, connect, db, forgetProject, api, isMissingSchema } from './api.js';
 import { icon } from './icons.js';
-import { esc, store, todayStr, addDays, fmtDay, recordPcShops, getAllShops } from './util.js';
+import { esc, store, todayStr, addDays, fmtDay, recordPcShops, getAllShops, startOfWeek, startOfMonth } from './util.js';
 import {
   renderOverview, renderTimeline, renderPrograms, renderRevenue, renderRequests, renderSettings,
   destroyCharts, bindTooltips, hideTooltip, loading
@@ -288,7 +288,13 @@ function renderControls(page) {
     el.querySelector('#todayBtn').onclick = () => go(todayStr());
     el.querySelector('#dayInput').onchange = (e) => e.target.value && go(e.target.value);
   } else if (mode === 'range') {
-    const presets = [['today', 'Today'], ['7d', '7D'], ['30d', '30D'], ['90d', '90D']];
+    const presets = [
+      ['today', 'Today'],
+      ['this_week', 'This Week'],
+      ['this_month', 'This Month'],
+      ['30d', '30D'],
+      ['90d', '90D']
+    ];
     el.innerHTML = `<div class="seg date-seg" id="presetSeg">${presets.map(([k, l]) => `<button data-preset="${k}" class="${state.range.preset === k ? 'active' : ''}">${l}</button>`).join('')}</div>
       <div class="date-pickers">
         <input class="input" type="date" id="fromInput" value="${state.range.from}" max="${todayStr()}" aria-label="From">
@@ -299,8 +305,14 @@ function renderControls(page) {
       const b = e.target.closest('button[data-preset]');
       if (!b) return;
       const today = todayStr();
-      const span = { today: 0, '7d': 6, '30d': 29, '90d': 89 }[b.dataset.preset];
-      state.range = { preset: b.dataset.preset, from: addDays(today, -span), to: today };
+      const p = b.dataset.preset;
+      let from = today;
+      if (p === 'today') from = today;
+      else if (p === 'this_week') from = startOfWeek(today);
+      else if (p === 'this_month') from = startOfMonth(today);
+      else if (p === '30d') from = addDays(today, -29);
+      else if (p === '90d') from = addDays(today, -89);
+      state.range = { preset: p, from, to: today };
       renderPage();
     };
     const custom = () => {
