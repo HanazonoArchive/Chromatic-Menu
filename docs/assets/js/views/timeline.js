@@ -5,7 +5,7 @@ import {
   moneyFromMinutes, rateText, cssVar, TZ, IDLE_PROGRAMS, recordPcShops, isStale
 } from '../util.js';
 import {
-  clampSegments, concurrencySteps, concurrencySlots, peakOf, minutesAtLeast, perPcDay
+  clampSegments, concurrencySteps, concurrencySlots, peakOf, minutesAtLeast, perPcDay, openHours
 } from '../analytics.js';
 import { makeChart, withAlpha, errorBox, empty, kpi, card, shopTag } from './common.js';
 
@@ -37,24 +37,26 @@ export async function renderTimeline(root, day) {
   const pcs = [...new Set([...byPc.keys(), ...status.filter(s => !isStale(s.last_seen)).map(s => s.pc_name)])]
     .sort((x, y) => x.localeCompare(y, undefined, { numeric: true }));
 
-  let dayOn = 0, dayActive = 0, boots = 0, stops = 0;
-  for (const p of byPc.values()) { dayOn += p.onMin; dayActive += p.activeMin; boots += p.boots; stops += p.midGameStops; }
+  let dayOn = 0, dayActive = 0, boots = 0;
+  for (const p of byPc.values()) { dayOn += p.onMin; dayActive += p.activeMin; boots += p.boots; }
   const pcsUsed = byPc.size;
   const steps = concurrencySteps(segs);
   const peak = peakOf(steps);
   const fleet = Math.max(1, pcsUsed);
   const fullHouse = minutesAtLeast(steps, fleet);
   const busy = minutesAtLeast(steps, Math.ceil(fleet * 0.75));
-  const firstOn = segs.length ? Math.min(...segs.map(s => s.a)) : null;
-  const lastOff = segs.length ? Math.max(...segs.map(s => s.b)) : null;
+  const hours = openHours(segs);
   const stillOpen = isToday && pcs.some(online);
-  const openMin = firstOn ? (lastOff - firstOn) / 60000 : 0;
+  const openMin = hours ? ((stillOpen ? Date.now() : hours.close) - hours.open) / 60000 : 0;
+  const blipText = hours && hours.blips.length
+    ? `Also on briefly ${hours.blips.slice(0, 2).map(b => `${fmtTime(b.a)}&ndash;${fmtTime(b.b)}`).join(', ')}${hours.blips.length > 2 ? ` +${hours.blips.length - 2}` : ''}`
+    : 'First PC on to last PC off';
 
   const kpis = `<div class="kpis">
     ${kpi({ label: 'Estimated revenue', iconName: 'wallet', tone: 'primary', value: fmtMoney(moneyFromMinutes(dayActive)), foot: `<span><b>${fmtMinutes(dayActive)}</b> active &middot; ${fmtPct(dayOn ? dayActive / dayOn : 0)} of on-time</span>` })}
-    ${kpi({ label: 'Shop hours', iconName: 'clock', value: firstOn ? `${fmtTime(firstOn)}<span class="of"> &ndash; ${stillOpen ? 'now' : fmtTime(lastOff)}</span>` : '&mdash;', foot: firstOn ? `<span>Open ${fmtMinutes(openMin)} &middot; first PC on to last PC off</span>` : '<span class="subtle">No PC was turned on</span>' })}
+    ${kpi({ label: 'Shop hours', iconName: 'clock', value: hours ? `${fmtTime(hours.open)}<span class="of"> &ndash; ${stillOpen ? 'now' : fmtTime(hours.close)}</span>` : '&mdash;', foot: hours ? `<span title="Short power-ons more than an hour away from the rest of the day are left out">Open ${fmtMinutes(openMin)} &middot; ${blipText}</span>` : '<span class="subtle">No PC was turned on</span>' })}
     ${kpi({ label: 'Peak', iconName: 'users', value: peak ? `${peak.count}<span class="of">/${fleet}</span>` : '&mdash;', foot: peak ? `<span>at ${fmtTime(peak.a)} &middot; full house ${fmtMinutes(fullHouse)}</span>` : '<span class="subtle">No active play</span>' })}
-    ${kpi({ label: 'Power-ons', iconName: 'power', value: String(boots), foot: stops ? `<span class="text-warn">${icon('alert-triangle')}${stops} turned off mid-game</span>` : `<span>${pcsUsed} of ${pcs.length} PCs used</span>` })}
+    ${kpi({ label: 'Power-ons', iconName: 'power', value: String(boots), foot: `<span>${pcsUsed} of ${pcs.length} PCs used</span>` })}
   </div>`;
 
   const ticks = [0, 3, 6, 9, 12, 15, 18, 21, 24];
@@ -81,7 +83,6 @@ export async function renderTimeline(root, day) {
       <div class="tl-station">
         <div class="tl-station-top"><span class="tl-station-name" title="${esc(pc)}">${esc(pc)}</span>${pill}</div>
         ${shopTag(pc, statusByPc.get(pc)?.menu_name)}
-        ${p.midGameStops ? `<span class="issue-tag" title="The PC stopped sending heartbeats while a game was open: power cut, crash, or forced shutdown.">${icon('alert-triangle')}${p.midGameStops} off mid-game</span>` : ''}
       </div>
       <div class="tl-bar">${gridLines}${bars}${nowMarker}</div>
       <div class="tl-stats">

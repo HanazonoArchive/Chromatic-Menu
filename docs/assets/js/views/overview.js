@@ -83,15 +83,13 @@ export async function renderOverview(root) {
   const fleet = Math.max(1, current.length);
 
   // ---- Attention strip: only things worth acting on ----
+  // A pisonet PC is switched off when the coin time runs out, usually with the
+  // game still open, so going offline is normal and shown neutrally.
   const attention = [];
-  const crashed = status.filter(s => !s.is_online && !IDLE_PROGRAMS.has(s.last_program) && s.last_program !== 'Windows'
-    && Date.parse(s.last_seen) >= dayStartMs(today));
-  for (const s of crashed) {
-    attention.push(`<a class="chip warn" href="#timeline">${icon('alert-triangle')}<span><b>${esc(s.pc_name)}</b> went off during ${esc(s.last_program)} &middot; ${esc(fmtAgo(s.last_seen))}</span></a>`);
-  }
-  const offlineOthers = current.filter(s => !s.is_online && !crashed.includes(s));
-  if (counts.use + counts.idle > 0 && offlineOthers.length) {
-    attention.push(`<a class="chip muted" href="#timeline">${icon('power')}<span><b>${offlineOthers.length}</b> offline: ${esc(offlineOthers.map(s => s.pc_name).join(', '))}</span></a>`);
+  const offline = current.filter(s => !s.is_online);
+  if (counts.use + counts.idle > 0 && offline.length) {
+    const list = offline.map(s => `${esc(s.pc_name)} (${esc(fmtAgo(s.last_seen))})`).join(', ');
+    attention.push(`<a class="chip muted" href="#timeline">${icon('power')}<span><b>${offline.length}</b> off while the shop is open: ${list}</span></a>`);
   } else if (current.length && counts.use + counts.idle === 0) {
     const lastSeen = Math.max(...current.map(s => Date.parse(s.last_seen)));
     attention.push(`<span class="chip muted">${icon('moon')}<span>All PCs are off &middot; last activity ${esc(fmtAgo(new Date(lastSeen).toISOString()))}</span></span>`);

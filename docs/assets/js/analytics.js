@@ -4,16 +4,30 @@ import { dayStartMs, todayStr, NON_PROGRAMS, groupBy } from './util.js';
 
 // Timeline rows clamped to the shop-local day (and to "now" for today),
 // with numeric a/b bounds in ms. Zero-length segments are dropped.
+//
+// A segment starts one interval before its first heartbeat. Heartbeats can
+// arrive slightly less than an interval apart (timer jitter, clock-offset
+// corrections), so a new segment may start a moment before the previous one
+// on the same PC ended. Each PC's segments are trimmed so they never overlap;
+// otherwise one PC would count twice in "PCs in use at once".
 export function clampSegments(rows, day) {
   const start = dayStartMs(day);
   const end = day === todayStr() ? Math.min(start + 86400000, Date.now()) : start + 86400000;
   const out = [];
-  for (const r of rows) {
-    const a = Math.max(start, Date.parse(r.seg_start));
-    const b = Math.min(end, Date.parse(r.seg_end));
-    if (b > a) out.push({ ...r, a, b });
+  for (const list of groupBy(rows, 'pc_name').values()) {
+    const sorted = list
+      .map(r => ({ ...r, a: Math.max(start, Date.parse(r.seg_start)), b: Math.min(end, Date.parse(r.seg_end)) }))
+      .sort((x, y) => x.a - y.a || x.b - y.b);
+    let lastEnd = -Infinity;
+    for (const s of sorted) {
+      s.a = Math.max(s.a, lastEnd);
+      if (s.b > s.a) {
+        out.push(s);
+        lastEnd = s.b;
+      }
+    }
   }
-  return out;
+  return out.sort((x, y) => x.a - y.a);
 }
 
 export function minutesOf(segs, pred = () => true) {
@@ -87,6 +101,29 @@ export function concurrencySlots(steps, day, slotMin = 15) {
   return slots;
 }
 
+// When the shop was open: the span where at least one PC was on, ignoring
+// short blips far from the main day (a PC left on past midnight that shuts
+// down a few minutes later, a quick restart at dawn for Windows Update).
+// Stretches separated by less than `gapMin` are joined; joined stretches
+// shorter than `minBlockMin` count as blips unless nothing longer exists.
+export function openHours(segs, gapMin = 60, minBlockMin = 30) {
+  const sorted = [...segs].sort((x, y) => x.a - y.a);
+  const blocks = [];
+  for (const s of sorted) {
+    const last = blocks[blocks.length - 1];
+    if (last && s.a - last.b <= gapMin * 60000) last.b = Math.max(last.b, s.b);
+    else blocks.push({ a: s.a, b: s.b });
+  }
+  if (!blocks.length) return null;
+  const main = blocks.filter(b => b.b - b.a >= minBlockMin * 60000);
+  const kept = main.length ? main : blocks;
+  return {
+    open: kept[0].a,
+    close: kept[kept.length - 1].b,
+    blips: blocks.filter(b => !kept.includes(b))
+  };
+}
+
 // Minutes per program from active segments, leaving out Windows / menu / unknown.
 export function programMinutes(segs) {
   const map = new Map();
@@ -104,15 +141,9 @@ export function perPcDay(segs, isOnline = () => false) {
     const sorted = [...list].sort((x, y) => x.a - y.a);
     const boots = groupBy(sorted, 'power_on');
     const online = isOnline(pc);
-    const lastBoot = Math.max(...boots.keys());
-    // A power-on block that ends while a program is still in the foreground means
-    // the PC lost power or crashed mid-game. The block still running now is not a stop.
-    let midGameStops = 0;
     let longest = 0;
-    for (const [boot, group] of boots) {
-      const last = group[group.length - 1];
-      if (last.kind === 'active' && !(online && boot === lastBoot)) midGameStops++;
-      longest = Math.max(longest, (last.b - group[0].a) / 60000);
+    for (const group of boots.values()) {
+      longest = Math.max(longest, (group[group.length - 1].b - group[0].a) / 60000);
     }
     const last = sorted[sorted.length - 1];
     result.set(pc, {
@@ -122,7 +153,6 @@ export function perPcDay(segs, isOnline = () => false) {
       first: sorted[0].a,
       last: last.b,
       boots: boots.size,
-      midGameStops,
       longest,
       current: online ? last : null
     });
