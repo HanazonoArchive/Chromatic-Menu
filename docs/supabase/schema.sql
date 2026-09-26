@@ -37,6 +37,8 @@ create table if not exists public.heartbeats (
 
 create index if not exists heartbeats_ts_idx    on public.heartbeats (ts desc);
 create index if not exists heartbeats_pc_ts_idx on public.heartbeats (pc_name, ts desc);
+-- Finds rows that arrived late (flushed from a PC's offline buffer).
+create index if not exists heartbeats_received_idx on public.heartbeats (received_at);
 
 create table if not exists public.game_requests (
     id          bigserial primary key,
@@ -60,6 +62,57 @@ create table if not exists public.daily_summary (
     top_program    text,
     primary key (day, pc_name)
 );
+
+-- Long-term history for the Programs page and the busy-hours heatmap.
+-- Raw heartbeats are purged after 90 days; these keep per-day totals.
+create table if not exists public.daily_program_summary (
+    day      date    not null,
+    pc_name  text    not null,
+    program  text    not null,
+    minutes  numeric not null,
+    primary key (day, pc_name, program)
+);
+
+create table if not exists public.hourly_summary (
+    day            date    not null,
+    hour           int     not null check (hour between 0 and 23),
+    pc_name        text    not null,
+    active_seconds numeric not null,
+    primary key (day, hour, pc_name)
+);
+
+-- ---------------------------------------------------------------------
+-- Duplicate heartbeats
+--
+-- If an upload times out after Supabase already stored it, the PC sends the
+-- same rows again (same pc_name and ts, to the millisecond). They are skipped
+-- here instead of rejected: a rejected batch would make the PC drop its whole
+-- offline buffer.
+-- ---------------------------------------------------------------------
+
+create or replace function public.heartbeats_skip_duplicates()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+    if exists (select 1 from public.heartbeats h where h.pc_name = new.pc_name and h.ts = new.ts) then
+        return null;
+    end if;
+    return new;
+end
+$$;
+
+drop trigger if exists heartbeats_skip_duplicates on public.heartbeats;
+create trigger heartbeats_skip_duplicates
+    before insert on public.heartbeats
+    for each row execute function public.heartbeats_skip_duplicates();
+
+-- Remove duplicates stored before the trigger existed (keeps the first copy).
+delete from public.heartbeats a
+using public.heartbeats b
+where a.pc_name = b.pc_name and a.ts = b.ts and a.id > b.id;
 
 -- ---------------------------------------------------------------------
 -- Game request cooldown: one request per PC every 5 minutes.
@@ -103,10 +156,14 @@ create trigger game_requests_before_insert
 alter table public.heartbeats    enable row level security;
 alter table public.game_requests enable row level security;
 alter table public.daily_summary enable row level security;
+alter table public.daily_program_summary enable row level security;
+alter table public.hourly_summary        enable row level security;
 
 revoke all on public.heartbeats    from anon, authenticated;
 revoke all on public.game_requests from anon, authenticated;
 revoke all on public.daily_summary from anon, authenticated;
+revoke all on public.daily_program_summary from anon, authenticated;
+revoke all on public.hourly_summary        from anon, authenticated;
 
 grant insert (ts, pc_name, menu_name, program, interval_seconds) on public.heartbeats to anon;
 grant usage on sequence public.heartbeats_id_seq to anon;
@@ -118,6 +175,8 @@ grant select on public.game_requests to authenticated;
 grant update (status) on public.game_requests to authenticated;
 
 grant select on public.daily_summary to authenticated;
+grant select on public.daily_program_summary to authenticated;
+grant select on public.hourly_summary to authenticated;
 
 drop policy if exists heartbeats_anon_insert  on public.heartbeats;
 drop policy if exists heartbeats_auth_select  on public.heartbeats;
@@ -125,6 +184,8 @@ drop policy if exists requests_anon_insert    on public.game_requests;
 drop policy if exists requests_auth_select    on public.game_requests;
 drop policy if exists requests_auth_update    on public.game_requests;
 drop policy if exists summary_auth_select     on public.daily_summary;
+drop policy if exists program_summary_auth_select on public.daily_program_summary;
+drop policy if exists hourly_summary_auth_select  on public.hourly_summary;
 
 create policy heartbeats_anon_insert on public.heartbeats
     for insert to anon with check (true);
@@ -139,6 +200,10 @@ create policy requests_auth_update on public.game_requests
     for update to authenticated using (true) with check (status in ('new', 'added', 'rejected'));
 
 create policy summary_auth_select on public.daily_summary
+    for select to authenticated using (true);
+create policy program_summary_auth_select on public.daily_program_summary
+    for select to authenticated using (true);
+create policy hourly_summary_auth_select on public.hourly_summary
     for select to authenticated using (true);
 
 -- ---------------------------------------------------------------------
@@ -195,12 +260,20 @@ as $$
     left join programs t on t.day = p.day and t.pc_name = p.pc_name and t.rn = 1
 $$;
 
+-- Rebuilds the stored totals for days that still have raw heartbeats.
+-- Days whose heartbeats were already purged are left untouched.
 create or replace function public.refresh_daily_summary(p_from date, p_to date)
 returns void
-language sql
+language plpgsql
 security definer
 set search_path = public
 as $$
+declare
+    tz     text        := public.shop_tz();
+    v_from timestamptz := p_from::timestamp at time zone public.shop_tz();
+    v_to   timestamptz := (p_to + 1)::timestamp at time zone public.shop_tz();
+    v_days date[];
+begin
     insert into public.daily_summary (day, pc_name, menu_name, minutes_on, minutes_active, top_program)
     select s.day, s.pc_name, s.menu_name, s.minutes_on, s.minutes_active, s.top_program
     from public.summarize_range(p_from, p_to) s
@@ -208,7 +281,56 @@ as $$
         set menu_name      = excluded.menu_name,
             minutes_on     = excluded.minutes_on,
             minutes_active = excluded.minutes_active,
-            top_program    = excluded.top_program
+            top_program    = excluded.top_program;
+
+    v_days := array(
+        select distinct (h.ts at time zone tz)::date
+        from public.heartbeats h
+        where h.ts >= v_from and h.ts < v_to);
+
+    delete from public.daily_program_summary s where s.day = any(v_days);
+    insert into public.daily_program_summary (day, pc_name, program, minutes)
+    select (h.ts at time zone tz)::date, h.pc_name, h.program, round(sum(h.interval_seconds) / 60.0, 2)
+    from public.heartbeats h
+    where h.ts >= v_from and h.ts < v_to
+    group by 1, 2, 3;
+
+    delete from public.hourly_summary s where s.day = any(v_days);
+    insert into public.hourly_summary (day, hour, pc_name, active_seconds)
+    select (x.local_ts)::date, extract(hour from x.local_ts)::int, x.pc_name, sum(x.interval_seconds)
+    from (
+        select h.ts at time zone tz as local_ts, h.pc_name, h.interval_seconds
+        from public.heartbeats h
+        where h.ts >= v_from and h.ts < v_to
+          and h.program not in ('Chromatic Menu', 'Unknown')
+    ) x
+    group by 1, 2, 3;
+end
+$$;
+
+-- Hourly job. Normally rebuilds yesterday and today, but a PC that was
+-- offline flushes its buffer late: up to 720 rows, which at the longest
+-- 600 s interval reaches 5 days back. Any day that received rows in the last
+-- two hours is rebuilt too, up to 6 days back (older ts values come from a
+-- PC with a wrong clock and are not worth a long rebuild).
+create or replace function public.refresh_recent_summaries()
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+    today     date := (now() at time zone public.shop_tz())::date;
+    late_from date;
+begin
+    select min((h.ts at time zone public.shop_tz())::date) into late_from
+    from public.heartbeats h
+    where h.received_at > now() - interval '2 hours';
+
+    perform public.refresh_daily_summary(
+        greatest(today - 6, least(today - 1, coalesce(late_from, today - 1))),
+        today);
+end
 $$;
 
 -- Keeps 90 days of raw heartbeats. Days are summarized before deletion,
@@ -316,6 +438,8 @@ as $$
     order by g.pc_name, min(g.ts)
 $$;
 
+-- Minutes per program and PC. Stored totals for older days, raw heartbeats
+-- for yesterday and today (the hourly job may not have caught up yet).
 create or replace function public.get_usage(p_from date, p_to date)
 returns table (program text, pc_name text, minutes numeric)
 language sql
@@ -323,11 +447,22 @@ stable
 security invoker
 set search_path = public
 as $$
-    select h.program, h.pc_name, round(sum(h.interval_seconds) / 60.0, 2)
-    from public.heartbeats h
-    where h.ts >= (p_from::timestamp at time zone public.shop_tz())
-      and h.ts <  ((p_to + 1)::timestamp at time zone public.shop_tz())
-    group by h.program, h.pc_name
+    with bounds as (
+        select (now() at time zone public.shop_tz())::date - 1 as live_from
+    )
+    select x.program, x.pc_name, round(sum(x.minutes), 2)
+    from (
+        select s.program, s.pc_name, s.minutes
+        from public.daily_program_summary s, bounds b
+        where s.day between p_from and least(p_to, b.live_from - 1)
+        union all
+        select h.program, h.pc_name, h.interval_seconds / 60.0
+        from public.heartbeats h, bounds b
+        where p_to >= b.live_from
+          and h.ts >= (greatest(p_from, b.live_from)::timestamp at time zone public.shop_tz())
+          and h.ts <  ((p_to + 1)::timestamp at time zone public.shop_tz())
+    ) x
+    group by x.program, x.pc_name
     order by 3 desc
 $$;
 
@@ -374,17 +509,26 @@ as $$
         from generate_series(p_from::timestamp, p_to::timestamp, interval '1 day') d
         group by 1
     ),
+    bounds as (
+        select (now() at time zone public.shop_tz())::date - 1 as live_from
+    ),
     active as (
-        select extract(isodow from x.local_ts)::int as weekday,
-               extract(hour from x.local_ts)::int  as hour,
-               sum(x.interval_seconds)             as secs
+        select y.weekday, y.hour, sum(y.secs) as secs
         from (
-            select h.ts at time zone public.shop_tz() as local_ts, h.interval_seconds
-            from public.heartbeats h
-            where h.ts >= (p_from::timestamp at time zone public.shop_tz())
-              and h.ts <  ((p_to + 1)::timestamp at time zone public.shop_tz())
-              and h.program not in ('Chromatic Menu', 'Unknown')
-        ) x
+            select extract(isodow from s.day)::int as weekday, s.hour, s.active_seconds as secs
+            from public.hourly_summary s, bounds b
+            where s.day between p_from and least(p_to, b.live_from - 1)
+            union all
+            select extract(isodow from x.local_ts)::int, extract(hour from x.local_ts)::int, x.interval_seconds
+            from (
+                select h.ts at time zone public.shop_tz() as local_ts, h.interval_seconds
+                from public.heartbeats h, bounds b
+                where p_to >= b.live_from
+                  and h.ts >= (greatest(p_from, b.live_from)::timestamp at time zone public.shop_tz())
+                  and h.ts <  ((p_to + 1)::timestamp at time zone public.shop_tz())
+                  and h.program not in ('Chromatic Menu', 'Unknown')
+            ) x
+        ) y
         group by 1, 2
     )
     select d.weekday, hr.hour, round(coalesce(a.secs, 0) / 3600.0 / d.n, 3)
@@ -392,6 +536,28 @@ as $$
     cross join generate_series(0, 23) as hr(hour)
     left join active a on a.weekday = d.weekday and a.hour = hr.hour
     order by 1, 2
+$$;
+
+-- Active minutes today so far, yesterday up to the same clock time, and all of
+-- yesterday. Used for "vs same time yesterday" without downloading timelines.
+create or replace function public.get_active_so_far()
+returns table (today_minutes numeric, yesterday_same_time_minutes numeric, yesterday_minutes numeric)
+language sql
+stable
+security invoker
+set search_path = public
+as $$
+    with b as (
+        select ((now() at time zone public.shop_tz())::date::timestamp at time zone public.shop_tz()) as today_start
+    )
+    select round(coalesce(sum(h.interval_seconds) filter (where h.ts >= b.today_start), 0) / 60.0, 2),
+           round(coalesce(sum(h.interval_seconds) filter (where h.ts < b.today_start and h.ts <= now() - interval '1 day'), 0) / 60.0, 2),
+           round(coalesce(sum(h.interval_seconds) filter (where h.ts < b.today_start), 0) / 60.0, 2)
+    from b
+    left join public.heartbeats h
+      on h.ts >= b.today_start - interval '1 day'
+     and h.program not in ('Chromatic Menu', 'Unknown')
+    group by b.today_start
 $$;
 
 -- Contiguous play session statistics by program across a date range.
@@ -487,6 +653,7 @@ $$;
 revoke execute on function public.summarize_range(date, date)       from public, anon, authenticated;
 revoke execute on function public.refresh_daily_summary(date, date) from public, anon, authenticated;
 revoke execute on function public.purge_old_heartbeats()            from public, anon, authenticated;
+revoke execute on function public.refresh_recent_summaries()        from public, anon, authenticated;
 revoke execute on function public.get_pc_status()                   from public, anon;
 revoke execute on function public.get_day_timeline(date)            from public, anon;
 revoke execute on function public.get_usage(date, date)             from public, anon;
@@ -495,6 +662,8 @@ revoke execute on function public.get_hourly_heatmap(date, date)    from public,
 revoke execute on function public.get_session_stats(date, date)     from public, anon;
 revoke execute on function public.get_network_incidents(date)       from public, anon;
 revoke execute on function public.game_requests_before_insert()     from public, anon, authenticated;
+revoke execute on function public.heartbeats_skip_duplicates()      from public, anon, authenticated;
+revoke execute on function public.get_active_so_far()               from public, anon;
 
 grant execute on function public.summarize_range(date, date)    to authenticated;
 grant execute on function public.get_pc_status()                to authenticated;
@@ -504,6 +673,7 @@ grant execute on function public.get_daily(date, date)          to authenticated
 grant execute on function public.get_hourly_heatmap(date, date) to authenticated;
 grant execute on function public.get_session_stats(date, date)  to authenticated;
 grant execute on function public.get_network_incidents(date)    to authenticated;
+grant execute on function public.get_active_so_far()            to authenticated;
 
 -- ---------------------------------------------------------------------
 -- Scheduled jobs (pg_cron runs in UTC; 19:00 UTC = 03:00 Manila)
@@ -516,9 +686,7 @@ where jobname in ('chromatic_daily_summary', 'chromatic_purge_heartbeats');
 select cron.schedule(
     'chromatic_daily_summary',
     '5 * * * *',
-    $$ select public.refresh_daily_summary(
-           (now() at time zone public.shop_tz())::date - 1,
-           (now() at time zone public.shop_tz())::date) $$
+    $$ select public.refresh_recent_summaries() $$
 );
 
 select cron.schedule(
@@ -526,3 +694,14 @@ select cron.schedule(
     '0 19 * * *',
     $$ select public.purge_old_heartbeats() $$
 );
+
+-- ---------------------------------------------------------------------
+-- Backfill: build the stored totals for every day that still has raw
+-- heartbeats (older days were purged before these tables existed).
+-- ---------------------------------------------------------------------
+
+select public.refresh_daily_summary(
+           min((ts at time zone public.shop_tz())::date),
+           max((ts at time zone public.shop_tz())::date))
+from public.heartbeats
+having count(*) > 0;

@@ -1,7 +1,18 @@
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/+esm';
 import { store } from './util.js';
+import { demoApi } from './demo.js';
 
 let client = null;
+
+// Demo mode answers every call from generated data instead of Supabase.
+export function isDemo() {
+  return store.get('demo') === '1';
+}
+
+export function setDemo(on) {
+  if (on) store.set('demo', '1');
+  else store.remove('demo');
+}
 
 export function savedProject() {
   const url = store.get('supabaseUrl');
@@ -54,12 +65,13 @@ async function rpc(name, args) {
   return data || [];
 }
 
-export const api = {
+const liveApi = {
   pcStatus: () => rpc('get_pc_status'),
   daily: (from, to) => rpc('get_daily', { p_from: from, p_to: to }),
   timeline: (day) => rpc('get_day_timeline', { p_day: day }),
   usage: (from, to) => rpc('get_usage', { p_from: from, p_to: to }),
   heatmap: (from, to) => rpc('get_hourly_heatmap', { p_from: from, p_to: to }),
+  // Newer functions: older schemas without them simply hide those sections.
   sessionStats: async (from, to) => {
     try {
       return await rpc('get_session_stats', { p_from: from, p_to: to });
@@ -74,9 +86,18 @@ export const api = {
       return null;
     }
   },
+  // { today_minutes, yesterday_same_time_minutes, yesterday_minutes }, or null on older schemas.
+  activeSoFar: async () => {
+    try {
+      const rows = await rpc('get_active_so_far');
+      return rows[0] || null;
+    } catch {
+      return null;
+    }
+  },
 
-  async requests(status) {
-    let q = client.from('game_requests').select('*').order('created_at', { ascending: false }).limit(500);
+  async requests(status, limit = 500) {
+    let q = client.from('game_requests').select('*').order('created_at', { ascending: false }).limit(limit);
     if (status && status !== 'all') q = q.eq('status', status);
     const { data, error } = await q;
     if (error) throw error;
@@ -89,11 +110,17 @@ export const api = {
     return count || 0;
   },
 
-  async setRequestStatus(id, status) {
-    const { error } = await client.from('game_requests').update({ status }).eq('id', id);
+  // ids: one id or an array (duplicate requests for the same game are handled together).
+  async setRequestStatus(ids, status) {
+    const list = [].concat(ids);
+    const { error } = await client.from('game_requests').update({ status }).in('id', list);
     if (error) throw error;
   }
 };
+
+export const api = new Proxy(liveApi, {
+  get: (target, prop) => (isDemo() ? demoApi : target)[prop]
+});
 
 // PostgREST reports a missing function/table with these codes: the schema was not run.
 export function isMissingSchema(error) {

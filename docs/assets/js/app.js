@@ -1,29 +1,45 @@
-import { savedProject, normalizeUrl, verifyProject, connect, db, forgetProject, api, isMissingSchema } from './api.js';
+import { savedProject, normalizeUrl, verifyProject, connect, db, forgetProject, api, isMissingSchema, isDemo, setDemo } from './api.js';
 import { icon } from './icons.js';
-import { esc, store, todayStr, addDays, fmtDay, recordPcShops, getAllShops, startOfWeek, startOfMonth } from './util.js';
-import {
-  renderOverview, renderTimeline, renderPrograms, renderRevenue, renderRequests, renderSettings,
-  destroyCharts, bindTooltips, hideTooltip, loading
-} from './views.js';
+import { esc, store, todayStr, addDays, fmtDay, fmtTime, recordPcShops, getAllShops, startOfWeek, startOfMonth } from './util.js';
+import { destroyCharts, bindTooltips, hideTooltip, loading } from './views/common.js';
+import { renderOverview } from './views/overview.js';
+import { renderTimeline } from './views/timeline.js';
+import { renderRevenue } from './views/revenue.js';
+import { renderPrograms } from './views/programs.js';
+import { renderRequests } from './views/requests.js';
+import { renderSettings } from './views/settings.js';
 
 const root = document.getElementById('root');
 
+// refresh: seconds between automatic reloads (null = manual only).
 const PAGES = {
-  overview: { group: 'Monitor', label: 'Overview', icon: 'layout-dashboard', subtitle: 'Live status and today at a glance', controls: 'none' },
-  timeline: { group: 'Monitor', label: 'Timeline', icon: 'clock', subtitle: 'When each PC was on, active or idle', controls: 'day' },
-  programs: { group: 'Insights', label: 'Programs', icon: 'app-window', subtitle: 'What customers use the most', controls: 'range' },
-  revenue: { group: 'Insights', label: 'Revenue', icon: 'wallet', subtitle: 'Estimated from active time', controls: 'range' },
-  requests: { group: 'Manage', label: 'Game requests', icon: 'message-square', subtitle: 'Sent from the Request a Game button', controls: 'none' },
-  settings: { group: 'Manage', label: 'Settings', icon: 'settings', subtitle: 'Dashboard preferences and connection', controls: 'none' }
+  overview: { group: 'Monitor', label: 'Overview', short: 'Live', icon: 'layout-dashboard', subtitle: 'Live floor and today so far', controls: 'none', refresh: 60 },
+  timeline: { group: 'Monitor', label: 'Timeline', short: 'Timeline', icon: 'clock', subtitle: 'When each PC was on, in use or idle', controls: 'day', refresh: 60 },
+  revenue: { group: 'Insights', label: 'Revenue', short: 'Revenue', icon: 'wallet', subtitle: 'Estimated from active time', controls: 'range', refresh: null },
+  programs: { group: 'Insights', label: 'Games & apps', short: 'Games', icon: 'gamepad-2', subtitle: 'What customers play and for how long', controls: 'range', refresh: null },
+  requests: { group: 'Manage', label: 'Game requests', short: 'Requests', icon: 'message-square', subtitle: 'Sent from the Request a Game button', controls: 'none', refresh: null },
+  settings: { group: 'Manage', label: 'Settings', short: 'Settings', icon: 'settings', subtitle: 'Revenue rate, display and connection', controls: 'none', refresh: null }
 };
+
+const PRESETS = [['today', 'Today'], ['7d', '7D'], ['this_week', 'Week'], ['this_month', 'Month'], ['30d', '30D'], ['90d', '90D']];
+
+function presetRange(preset, today = todayStr()) {
+  const from = {
+    today, '7d': addDays(today, -6), this_week: startOfWeek(today), this_month: startOfMonth(today),
+    '30d': addDays(today, -29), '90d': addDays(today, -89)
+  }[preset];
+  return from ? { preset, from, to: today } : null;
+}
 
 const state = {
   theme: store.get('theme', 'dark'),
   day: todayStr(),
-  range: { preset: '7d', from: addDays(todayStr(), -6), to: todayStr() },
+  followToday: true,
+  range: presetRange(store.get('rangePreset', '7d')) || presetRange('7d'),
   requestFilter: 'new',
   email: '',
-  refreshTimer: null
+  timer: null,
+  lastRender: 0
 };
 
 function setTheme(theme) {
@@ -32,26 +48,61 @@ function setTheme(theme) {
   store.set('theme', state.theme);
 }
 
-function brand(sub) {
+function shopLabel(fallback) {
   const shops = getAllShops();
-  const shopSub = shops.length === 1 ? shops[0] : (shops.length > 1 ? `${shops.length} Shops` : (sub || 'Dashboard'));
-  return `<div class="brand"><div class="brand-mark">${icon('layout-grid')}</div>
-    <div class="brand-text"><div class="brand-name" title="Chromatic Menu">Chromatic Menu</div><div class="brand-sub" title="${esc(shopSub)}">${esc(shopSub)}</div></div></div>`;
+  return shops.length === 1 ? shops[0] : shops.length > 1 ? `${shops.length} shops` : fallback;
 }
 
-function updateSidebarBrand() {
-  const brandEl = root.querySelector('.sidebar > .brand');
-  if (!brandEl) return;
-  const shops = getAllShops();
-  const shopSub = shops.length === 1 ? shops[0] : (shops.length > 1 ? `${shops.length} Shops` : 'Dashboard');
-  const name = brandEl.querySelector('.brand-name');
-  const sub = brandEl.querySelector('.brand-sub');
-  if (name) { name.textContent = 'Chromatic Menu'; name.title = 'Chromatic Menu'; }
-  if (sub) { sub.textContent = shopSub; sub.title = shopSub; }
+function brand(sub) {
+  return `<div class="brand"><div class="brand-mark">${icon('layout-grid')}</div>
+    <div class="brand-text"><div class="brand-name">Chromatic Menu</div><div class="brand-sub" title="${esc(sub)}">${esc(sub)}</div></div></div>`;
 }
 
 function errorAlert(text) {
   return `<div class="alert error" style="margin-bottom:14px">${icon('alert-triangle')}<div>${esc(text)}</div></div>`;
+}
+
+// ---------------------------------------------------------------------------
+// Routing: #page or #page?day=YYYY-MM-DD / #page?from=..&to=.. so reloads and
+// shared links keep the selected dates.
+// ---------------------------------------------------------------------------
+
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+function parseHash() {
+  const [name, query] = location.hash.slice(1).split('?');
+  const page = PAGES[name] ? name : 'overview';
+  const params = new URLSearchParams(query || '');
+  const today = todayStr();
+  const day = params.get('day');
+  if (DATE_RE.test(day || '')) {
+    state.day = day > today ? today : day;
+    state.followToday = state.day === today;
+  }
+  const from = params.get('from');
+  const to = params.get('to');
+  if (DATE_RE.test(from || '') && DATE_RE.test(to || '')) {
+    const [a, b] = from <= to ? [from, to] : [to, from];
+    const preset = PRESETS.map(p => p[0]).find(p => {
+      const r = presetRange(p, today);
+      return r.from === a && r.to === b;
+    });
+    state.range = { preset: preset || 'custom', from: a, to: b > today ? today : b };
+  }
+  return page;
+}
+
+function hashFor(page) {
+  const mode = PAGES[page].controls;
+  if (mode === 'day') return state.followToday ? `#${page}` : `#${page}?day=${state.day}`;
+  if (mode === 'range') return `#${page}?from=${state.range.from}&to=${state.range.to}`;
+  return `#${page}`;
+}
+
+function navigate(page) {
+  const target = hashFor(page);
+  if (location.hash !== target) history.replaceState(null, '', target);
+  renderPage();
 }
 
 // ---------------------------------------------------------------------------
@@ -67,8 +118,8 @@ function authLayout(inner) {
         <h2>See which PCs are <em>earning</em>, right now.</h2>
         <p>Live status, usage and estimated revenue from every Chromatic Menu PC in your shop.</p>
         <ul class="feature-list">
-          <li><span class="fi">${icon('monitor')}</span><div><b>Live PC status</b><span>Online or offline, and the program in use.</span></div></li>
-          <li><span class="fi">${icon('wallet')}</span><div><b>Revenue estimate</b><span>Estimated from active minutes, by day and by PC.</span></div></li>
+          <li><span class="fi">${icon('monitor')}</span><div><b>Live floor</b><span>Which PCs are in use, idle or off, and for how long.</span></div></li>
+          <li><span class="fi">${icon('wallet')}</span><div><b>Revenue estimate</b><span>By hour, day, week and PC, with CSV export.</span></div></li>
           <li><span class="fi">${icon('message-square')}</span><div><b>Game requests</b><span>What customers want you to install next.</span></div></li>
         </ul>
       </div>
@@ -92,9 +143,17 @@ function showConnect(message) {
       <label class="field"><span>Project URL</span><input class="input" id="url" placeholder="https://your-project.supabase.co" autocomplete="off" spellcheck="false"></label>
       <label class="field"><span>Anon (public) key</span><input class="input mono" id="key" placeholder="eyJhbGciOi..." autocomplete="off" spellcheck="false"></label>
       <div id="connectMsg">${message ? errorAlert(message) : ''}</div>
-      <div class="actions"><button class="btn primary lg" type="submit" id="connectBtn">Verify and continue ${icon('arrow-right')}</button></div>
+      <div class="actions">
+        <button class="btn primary lg" type="submit" id="connectBtn">Verify and continue ${icon('arrow-right')}</button>
+        <button class="btn lg" type="button" id="demoBtn">${icon('play-circle')}Explore with demo data</button>
+      </div>
     </form>
     <div class="auth-foot"><span>First time here?</span><a href="setup.html">Set up Supabase step by step</a></div>`);
+
+  root.querySelector('#demoBtn').addEventListener('click', () => {
+    setDemo(true);
+    enterApp();
+  });
 
   const form = root.querySelector('#connectForm');
   form.addEventListener('submit', async (e) => {
@@ -182,6 +241,7 @@ function showSchemaMissing() {
 }
 
 async function logout() {
+  if (isDemo()) { exitDemo(); return; }
   await db().auth.signOut();
   showLogin();
 }
@@ -189,6 +249,12 @@ async function logout() {
 async function changeProject() {
   await forgetProject();
   showConnect();
+}
+
+function exitDemo() {
+  setDemo(false);
+  const project = savedProject();
+  if (project) { connect(project.url, project.key); showLogin(); } else showConnect();
 }
 
 // ---------------------------------------------------------------------------
@@ -205,39 +271,43 @@ async function enterApp() {
     showLogin('Could not load data: ' + (e.message || e));
     return;
   }
-
   recordPcShops(initialStatus);
 
-  const { data } = await db().auth.getUser();
-  state.email = data?.user?.email || '';
+  if (isDemo()) {
+    state.email = 'demo@chromatic.menu';
+  } else {
+    const { data } = await db().auth.getUser();
+    state.email = data?.user?.email || '';
+  }
   renderShell();
-  if (!location.hash || !PAGES[location.hash.slice(1)]) location.hash = '#overview';
   renderPage();
 }
 
 function renderShell() {
   const project = savedProject();
+  const demo = isDemo();
   const groups = [...new Set(Object.values(PAGES).map(p => p.group))];
   root.innerHTML = `<div class="shell">
     <aside class="sidebar">
-      ${brand('Dashboard')}
+      ${brand(shopLabel(demo ? 'Demo shop' : 'Dashboard'))}
       <div class="nav-groups" id="nav">
-        ${groups.map(g => `<div class="nav-group"><span class="eyebrow">${esc(g)}</span><nav class="nav">
-          ${Object.entries(PAGES).filter(([, p]) => p.group === g).map(([id, p]) => `<a href="#${id}" data-page="${id}">${icon(p.icon)}<span class="label">${esc(p.label)}</span>${id === 'requests' ? '<span class="badge hidden" id="reqBadge"></span>' : ''}</a>`).join('')}
+        ${groups.map(g => `<div class="nav-group"><span class="eyebrow">${esc(g)}</span><nav class="nav" aria-label="${esc(g)}">
+          ${Object.entries(PAGES).filter(([, p]) => p.group === g).map(([id, p]) => `<a href="#${id}" data-page="${id}" aria-label="${esc(p.label)}" title="${esc(p.label)}">${icon(p.icon)}<span class="label">${esc(p.label)}</span><span class="label-short">${esc(p.short)}</span>${id === 'requests' ? '<span class="badge hidden" id="reqBadge"></span>' : ''}</a>`).join('')}
         </nav></div>`).join('')}
       </div>
       <div class="sidebar-foot">
         <div class="user-card">
           <div class="avatar">${esc((state.email || '?').charAt(0))}</div>
-          <div class="who"><div class="email" title="${esc(state.email)}">${esc(state.email)}</div><div class="conn">${esc(project ? new URL(project.url).host : '')}</div></div>
+          <div class="who"><div class="email" title="${esc(state.email)}">${esc(state.email)}</div><div class="conn">${demo ? 'Demo data' : esc(project ? new URL(project.url).host : '')}</div></div>
         </div>
         <div class="row">
           <button class="btn ghost icon-only" id="themeBtn" title="Switch theme" aria-label="Switch theme">${icon(state.theme === 'dark' ? 'sun' : 'moon')}</button>
-          <button class="btn ghost icon-only" id="logoutBtn" title="Log out" aria-label="Log out">${icon('log-out')}</button>
+          <button class="btn ghost icon-only" id="logoutBtn" title="${demo ? 'Leave demo' : 'Log out'}" aria-label="${demo ? 'Leave demo' : 'Log out'}">${icon('log-out')}</button>
         </div>
       </div>
     </aside>
     <main class="main">
+      ${demo ? `<div class="demo-bar">${icon('play-circle')}<span>You are viewing <b>demo data</b>.</span><button class="link-btn" id="demoExit">Connect your shop</button></div>` : ''}
       <div class="topbar">
         <div class="title"><h1 id="pageTitle"></h1><div class="sub" id="pageSub"></div></div>
         <div class="controls" id="controls"></div>
@@ -252,8 +322,17 @@ function renderShell() {
     renderPage();
   });
   root.querySelector('#logoutBtn').addEventListener('click', logout);
+  root.querySelector('#demoExit')?.addEventListener('click', exitDemo);
   bindTooltips(root.querySelector('#page'));
   updateRequestBadge();
+}
+
+function updateSidebarBrand() {
+  const sub = root.querySelector('.sidebar .brand-sub');
+  if (!sub) return;
+  const text = shopLabel(isDemo() ? 'Demo shop' : 'Dashboard');
+  sub.textContent = text;
+  sub.title = text;
 }
 
 async function updateRequestBadge() {
@@ -261,7 +340,7 @@ async function updateRequestBadge() {
   if (!badge) return;
   try {
     const n = await api.newRequestCount();
-    badge.textContent = String(n);
+    badge.textContent = n > 99 ? '99+' : String(n);
     badge.classList.toggle('hidden', n === 0);
   } catch {
     badge.classList.add('hidden');
@@ -272,48 +351,37 @@ function renderControls(page) {
   const el = document.getElementById('controls');
   const refresh = `<button class="btn icon-only" id="refreshBtn" title="Refresh" aria-label="Refresh">${icon('refresh-cw')}</button>`;
   const mode = PAGES[page].controls;
+  const today = todayStr();
+
   if (mode === 'day') {
-    const today = todayStr();
-    el.innerHTML = `<div class="seg date-seg">
-        <button id="prevDay" aria-label="Previous day">Prev</button>
-        <button id="todayBtn" class="${state.day === today ? 'active' : ''}">Today</button>
-        <button id="nextDay" aria-label="Next day" ${state.day >= today ? 'disabled' : ''}>Next</button>
+    el.innerHTML = `<div class="day-nav">
+        <button class="btn icon-only" id="prevDay" title="Previous day" aria-label="Previous day">${icon('chevron-left')}</button>
+        <input class="input" type="date" id="dayInput" value="${state.day}" max="${today}" aria-label="Day">
+        <button class="btn icon-only" id="nextDay" title="Next day" aria-label="Next day" ${state.day >= today ? 'disabled' : ''}>${icon('chevron-right')}</button>
       </div>
-      <div class="date-pickers">
-        <input class="input" type="date" id="dayInput" value="${state.day}" max="${today}">
-      </div>${refresh}`;
-    const go = (day) => { state.day = day > todayStr() ? todayStr() : day; renderPage(); };
+      <button class="btn ${state.day === today ? 'active-soft' : ''}" id="todayBtn">Today</button>${refresh}`;
+    const go = (day) => {
+      state.day = day > todayStr() ? todayStr() : day;
+      state.followToday = state.day === todayStr();
+      navigate(page);
+    };
     el.querySelector('#prevDay').onclick = () => go(addDays(state.day, -1));
     el.querySelector('#nextDay').onclick = () => go(addDays(state.day, 1));
     el.querySelector('#todayBtn').onclick = () => go(todayStr());
     el.querySelector('#dayInput').onchange = (e) => e.target.value && go(e.target.value);
   } else if (mode === 'range') {
-    const presets = [
-      ['today', 'Today'],
-      ['this_week', 'This Week'],
-      ['this_month', 'This Month'],
-      ['30d', '30D'],
-      ['90d', '90D']
-    ];
-    el.innerHTML = `<div class="seg date-seg" id="presetSeg">${presets.map(([k, l]) => `<button data-preset="${k}" class="${state.range.preset === k ? 'active' : ''}">${l}</button>`).join('')}</div>
+    el.innerHTML = `<div class="seg date-seg" id="presetSeg">${PRESETS.map(([k, l]) => `<button data-preset="${k}" class="${state.range.preset === k ? 'active' : ''}">${l}</button>`).join('')}</div>
       <div class="date-pickers">
-        <input class="input" type="date" id="fromInput" value="${state.range.from}" max="${todayStr()}" aria-label="From">
+        <input class="input" type="date" id="fromInput" value="${state.range.from}" max="${today}" aria-label="From">
         <span class="subtle">to</span>
-        <input class="input" type="date" id="toInput" value="${state.range.to}" max="${todayStr()}" aria-label="To">
+        <input class="input" type="date" id="toInput" value="${state.range.to}" max="${today}" aria-label="To">
       </div>${refresh}`;
     el.querySelector('#presetSeg').onclick = (e) => {
       const b = e.target.closest('button[data-preset]');
       if (!b) return;
-      const today = todayStr();
-      const p = b.dataset.preset;
-      let from = today;
-      if (p === 'today') from = today;
-      else if (p === 'this_week') from = startOfWeek(today);
-      else if (p === 'this_month') from = startOfMonth(today);
-      else if (p === '30d') from = addDays(today, -29);
-      else if (p === '90d') from = addDays(today, -89);
-      state.range = { preset: p, from, to: today };
-      renderPage();
+      state.range = presetRange(b.dataset.preset);
+      store.set('rangePreset', b.dataset.preset);
+      navigate(page);
     };
     const custom = () => {
       let from = el.querySelector('#fromInput').value;
@@ -321,77 +389,114 @@ function renderControls(page) {
       if (!from || !to) return;
       if (from > to) [from, to] = [to, from];
       state.range = { preset: 'custom', from, to };
-      renderPage();
+      navigate(page);
     };
     el.querySelector('#fromInput').onchange = custom;
     el.querySelector('#toInput').onchange = custom;
   } else {
     el.innerHTML = page === 'settings' ? '' : refresh;
   }
-  const btn = el.querySelector('#refreshBtn');
-  if (btn) btn.onclick = () => renderPage();
+  el.querySelector('#refreshBtn')?.addEventListener('click', () => renderPage({ quiet: true }));
 }
 
 function stopRefresh() {
-  if (state.refreshTimer) clearInterval(state.refreshTimer);
-  state.refreshTimer = null;
+  if (state.timer) clearTimeout(state.timer);
+  state.timer = null;
 }
 
-async function renderPage() {
+function scheduleRefresh(page) {
+  stopRefresh();
+  const secs = PAGES[page].refresh;
+  if (!secs || (page === 'timeline' && state.day !== todayStr())) return;
+  state.timer = setTimeout(() => {
+    if (document.hidden) { scheduleRefresh(page); return; }
+    renderPage({ quiet: true });
+  }, secs * 1000);
+}
+
+function setUpdated() {
+  const el = document.getElementById('updatedAt');
+  if (el) el.textContent = `Updated ${fmtTime(Date.now())}`;
+}
+
+// Each full render gets its own host element. If the user navigates away while
+// a page is still loading, the old render writes into a detached host and is
+// dropped. Quiet refreshes reuse the current host, so the old content stays on
+// screen until the new data arrives.
+let renderSeq = 0;
+
+async function renderPage({ quiet = false } = {}) {
   const pageEl = document.getElementById('page');
   if (!pageEl) return;
-  const page = PAGES[location.hash.slice(1)] ? location.hash.slice(1) : 'overview';
+  const seq = ++renderSeq;
+  const page = parseHash();
   const info = PAGES[page];
 
+  // Past midnight, pages that were showing "today" move to the new day.
+  const today = todayStr();
+  if (state.followToday) state.day = today;
+  if (state.range.preset !== 'custom' && state.range.to !== today) state.range = presetRange(state.range.preset, today);
+
   stopRefresh();
-  destroyCharts();
   hideTooltip();
-  document.querySelectorAll('#nav a').forEach(a => a.classList.toggle('active', a.dataset.page === page));
+  document.querySelectorAll('#nav a').forEach(a => {
+    const on = a.dataset.page === page;
+    a.classList.toggle('active', on);
+    if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
+    a.setAttribute('href', hashFor(a.dataset.page));
+  });
   document.getElementById('pageTitle').textContent = info.label;
   const sub = document.getElementById('pageSub');
-  if (info.controls === 'range') {
-    sub.innerHTML = `${esc(info.subtitle)} <span class="badge">${esc(fmtDay(state.range.from))} &ndash; ${esc(fmtDay(state.range.to))}</span>`;
-  } else if (page === 'overview') {
-    sub.innerHTML = `<span class="live"><span class="dot ring"></span>Live</span><span>${esc(info.subtitle)}</span>`;
-  } else {
-    sub.textContent = info.subtitle;
-  }
-  document.title = `${info.label} - Chromatic Menu Dashboard`;
+  const range = info.controls === 'range'
+    ? `<span class="badge">${esc(fmtDay(state.range.from))}${state.range.from !== state.range.to ? ` &ndash; ${esc(fmtDay(state.range.to))}` : ''}</span>`
+    : '';
+  const live = info.refresh && (page !== 'timeline' || state.day === today)
+    ? `<span class="live"><span class="dot ring"></span>Live</span><span class="subtle" id="updatedAt"></span>` : '';
+  sub.innerHTML = `${live}<span>${esc(info.subtitle)}</span>${range}`;
+  document.title = `${info.label} - Chromatic Menu`;
   renderControls(page);
 
-  pageEl.innerHTML = loading();
+  let host = pageEl.firstElementChild;
+  if (!quiet || !host || host.dataset.page !== page) {
+    destroyCharts();
+    host = document.createElement('div');
+    host.className = 'page-host';
+    host.dataset.page = page;
+    host.innerHTML = loading();
+    pageEl.replaceChildren(host);
+  } else {
+    pageEl.classList.add('refreshing');
+  }
+
   switch (page) {
-    case 'overview':
-      await renderOverview(pageEl);
-      state.refreshTimer = setInterval(async () => {
-        await renderOverview(pageEl);
-        updateSidebarBrand();
-        updateRequestBadge();
-      }, 60000);
-      break;
-    case 'timeline':
-      await renderTimeline(pageEl, state.day);
-      break;
-    case 'programs':
-      await renderPrograms(pageEl, state.range);
-      break;
-    case 'revenue':
-      await renderRevenue(pageEl, state.range);
-      break;
+    case 'overview': await renderOverview(host); break;
+    case 'timeline': await renderTimeline(host, state.day); break;
+    case 'programs': await renderPrograms(host, state.range); break;
+    case 'revenue': await renderRevenue(host, state.range); break;
     case 'requests':
-      await renderRequests(pageEl, state.requestFilter, ({ filter }) => {
+      await renderRequests(host, state.requestFilter, ({ filter }) => {
         state.requestFilter = filter;
         updateRequestBadge();
-        renderPage();
+        renderPage({ quiet: true });
       });
       break;
     case 'settings': {
       const project = savedProject();
-      renderSettings(pageEl, { theme: state.theme, setTheme, url: project?.url || '', email: state.email, logout, changeProject });
+      renderSettings(host, {
+        theme: state.theme, setTheme, url: project?.url || '', email: state.email,
+        logout, changeProject, exitDemo, demo: isDemo()
+      });
       break;
     }
   }
+
+  if (seq !== renderSeq || !host.isConnected) return;
+  pageEl.classList.remove('refreshing');
+  state.lastRender = Date.now();
+  setUpdated();
   updateSidebarBrand();
+  if (page === 'overview') updateRequestBadge();
+  scheduleRefresh(page);
 }
 
 // ---------------------------------------------------------------------------
@@ -401,13 +506,20 @@ async function renderPage() {
 async function boot() {
   setTheme(state.theme);
   window.addEventListener('hashchange', () => { if (document.getElementById('page')) renderPage(); });
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden || !document.getElementById('page')) return;
+    const page = parseHash();
+    if (PAGES[page].refresh && Date.now() - state.lastRender > 30000) renderPage({ quiet: true });
+  });
+
+  if (isDemo()) { await enterApp(); return; }
 
   const project = savedProject();
   if (!project) { showConnect(); return; }
 
   connect(project.url, project.key);
   db().auth.onAuthStateChange((event) => {
-    if (event === 'SIGNED_OUT' && document.getElementById('page')) showLogin();
+    if (event === 'SIGNED_OUT' && document.getElementById('page') && !isDemo()) showLogin();
   });
 
   const { data } = await db().auth.getSession();

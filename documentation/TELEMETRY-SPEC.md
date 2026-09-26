@@ -104,7 +104,9 @@ Shop-local time zone: **`Asia/Manila`**. Define it in one clearly commented plac
 | `interval_seconds` | `int not null` (check 15–3600) | the interval in effect when the row was created |
 | `received_at` | `timestamptz not null default now()` | server |
 
-Indexes: `(ts desc)`, `(pc_name, ts desc)`.
+Indexes: `(ts desc)`, `(pc_name, ts desc)`, `(received_at)`.
+
+**Duplicate rows:** if an upload times out after the server stored it, the service resends the same rows (same `pc_name` and `ts`). A `before insert` trigger (`security definer`) silently skips a row whose `(pc_name, ts)` already exists. Do **not** use a unique constraint instead: the resulting HTTP 409 is a permanent data error for the service (§3), which would drop its whole offline buffer.
 
 **Time math rule (everywhere):** time covered by a row = `interval_seconds`. Minutes on = `sum(interval_seconds)/60`. Never assume 1 row = 1 minute.
 
@@ -141,12 +143,21 @@ Enforce lengths with `check` constraints, not only in the app.
 | `top_program` | `text` — by summed time, per §2.1 exclusions (null if none) |
 | primary key | `(day, pc_name)` |
 
+### 2.3a Tables `daily_program_summary` and `hourly_summary`
+
+Long-term history for program usage and the busy-hours heatmap, which would otherwise end with the 90-day purge.
+
+- `daily_program_summary`: `day`, `pc_name`, `program`, `minutes`; primary key `(day, pc_name, program)`.
+- `hourly_summary`: `day`, `hour` (0–23, shop-local), `pc_name`, `active_seconds`; primary key `(day, hour, pc_name)`.
+
+Rebuilt by `refresh_daily_summary` together with `daily_summary`, only for days that still have raw heartbeats.
+
 ### 2.4 Row Level Security & grants
 
 - Enable RLS on all tables.
 - `heartbeats`: `anon` → INSERT only. `authenticated` → SELECT only.
 - `game_requests`: `anon` → INSERT only, `with check (status = 'new')`. `authenticated` → SELECT, and UPDATE of **only** `status` (revoke update, then `grant update (status) … to authenticated`).
-- `daily_summary`: `authenticated` → SELECT only. `anon` → nothing.
+- `daily_summary`, `daily_program_summary`, `hourly_summary`: `authenticated` → SELECT only. `anon` → nothing.
 - Clients insert with `Prefer: return=minimal` (`anon` has no SELECT, so `return=representation` would fail).
 
 ### 2.5 Dashboard RPC functions
@@ -155,14 +166,15 @@ Supabase's API caps responses at **1000 rows** by default, and one day of 4 PCs 
 
 - `get_pc_status()` → per PC: `pc_name`, `menu_name`, `last_seen`, `last_program`, `last_interval_seconds`, `is_online` (last heartbeat within `2 × interval_seconds + 60 s` of `now()`).
 - `get_day_timeline(p_day date)` → per PC, compressed **segments** using gaps-and-islands: `pc_name`, `seg_start`, `seg_end`, `kind` (`'active'` / `'idle'`), `program`. Consecutive rows join a segment if the gap is ≤ `2 × interval_seconds + 30 s`. A larger gap means the PC was off.
-- `get_usage(p_from date, p_to date)` → `program`, `pc_name`, `minutes`.
+- `get_usage(p_from date, p_to date)` → `program`, `pc_name`, `minutes`, from `daily_program_summary` for older days plus raw heartbeats for yesterday and today.
 - `get_daily(p_from date, p_to date)` → `day`, `pc_name`, `minutes_on`, `minutes_active`, from `daily_summary` for past days plus a live computation for today.
-- `get_hourly_heatmap(p_from date, p_to date)` → `weekday`, `hour`, `avg_active_pcs` (for the busy-hours heatmap).
+- `get_hourly_heatmap(p_from date, p_to date)` → `weekday`, `hour`, `avg_active_pcs` (for the busy-hours heatmap), from `hourly_summary` for older days plus raw heartbeats for yesterday and today.
+- `get_active_so_far()` → `today_minutes`, `yesterday_same_time_minutes`, `yesterday_minutes` (active time, for "vs same time yesterday").
 
 ### 2.6 Scheduled jobs (pg_cron)
 
 - `create extension if not exists pg_cron;`
-- Every hour: upsert `daily_summary` for **today and yesterday** (shop-local).
+- Every hour (`refresh_recent_summaries`): rebuild the summaries for **today and yesterday** (shop-local), plus any earlier day that received rows in the last 2 hours, capped at 6 days back. A PC's offline buffer (720 rows, up to 5 days at the 600 s interval) is flushed late, so those days must be rebuilt when it arrives.
 - Daily at 03:00 Manila: delete `heartbeats` older than **90 days**, after their summary exists.
 - Idempotent: unschedule by name if present, then schedule.
 

@@ -9,11 +9,12 @@ export const NON_PROGRAMS = new Set(['Chromatic Menu', 'Unknown', 'Windows']);
 
 export function formatProgramName(program, isOnline = true) {
   if (!program || program === 'Unknown') {
-    return isOnline ? 'Idle (No app reported)' : 'Unknown';
+    return isOnline ? 'Idle (no app reported)' : 'Unknown';
   }
   if (program === 'Chromatic Menu') {
     return 'Idle in menu';
   }
+  if (program === 'Windows') return 'Windows app';
   return program;
 }
 
@@ -125,6 +126,12 @@ export function fmtMinutes(minutes) {
   return r ? `${hStr}h ${r}m` : `${hStr}h`;
 }
 
+// 0-23 -> "12 AM" .. "11 PM"
+export function fmtHour(h) {
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  return `${h % 12 === 0 ? 12 : h % 12} ${ampm}`;
+}
+
 export function fmtAgo(iso) {
   const s = Math.max(0, (Date.now() - Date.parse(iso)) / 1000);
   if (s < 90) return 'just now';
@@ -180,6 +187,32 @@ export function moneyFromMinutes(minutes) {
 
 export function rateText() {
   return `${fmtMoney(1, { minimumFractionDigits: 0, maximumFractionDigits: 0 })} per ${minutesPerUnit()} active min`;
+}
+
+// PCs not seen for this many days are treated as inactive and tucked away.
+export function staleDays() {
+  const v = Number(store.get('staleDays', '7'));
+  return v >= 1 ? v : 7;
+}
+
+export function isStale(lastSeen) {
+  return Date.now() - Date.parse(lastSeen) > staleDays() * 86400000;
+}
+
+export function downloadCsv(filename, header, rows) {
+  const cell = (v) => {
+    const t = String(v ?? '');
+    return /[",\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t;
+  };
+  const text = [header, ...rows].map(r => r.map(cell).join(',')).join('\r\n');
+  const url = URL.createObjectURL(new Blob([String.fromCharCode(0xFEFF) + text], { type: 'text/csv;charset=utf-8' }));
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 export function cssVar(name) {
